@@ -4,6 +4,9 @@ Target: 实现Xu_2021_ReNAS_CVPR中对nasbench101中网络的Feature Tensor enco
 Method: 将adjacency matrix, vertex的flops和params padding之后, 将每个cell的vertex flops list 和params list与
         adjacency matrix 相乘，构成两张代表这个cell的7*7 tensor, 全部结构共有9个cell共18张, 加上adjacency matrix
         共有19张7*7的tensor
+
+Input: arch:dict
+Output: torch.Tensor(C,H,W) default= 19*7*7 for nasbench101
 """
 
 import json
@@ -11,7 +14,6 @@ import torch
 
 from  torch.nn import functional as F
 
-import numpy as np
 
 type_dict = {'input':1, 'conv1x1-bn-relu':2 , 'conv3x3-bn-relu':3, 'maxpool3x3':4, 'output':5}
 
@@ -57,8 +59,8 @@ def feature_tensor_encoding(arch:dict, arch_feature_dim=7, arch_feature_channels
         
     matrix_ = arch['module_adjacency']
     ops_ = arch['module_operations']
-    params_ = arch['trainable_parameters']
-    flops_ = arch['flops']
+    # params_ = arch['trainable_parameters']
+    # flops_ = arch['flops']
     vertex_flops_dict_ = arch['vertex_flops']
     vertex_params_dict_ = arch['vertex_params']
 
@@ -117,7 +119,8 @@ if __name__ == "__main__":
         dataset = json.load(f)
     f.close()
     assert isinstance(dataset,list)
-    arch = dataset[0]
+    arch = dataset[1]
 
     encoded_arch = feature_tensor_encoding(arch)
     print(encoded_arch)
+    print(encoded_arch.shape)
