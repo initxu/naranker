@@ -16,13 +16,15 @@ import numpy as np
 def adjacency_matrix_padding(matrix, arch_feature_dim, num_vertices):
    
     assert isinstance(matrix, torch.Tensor), 'adjacency matrix type should be torch.Tensor'
+    
     pad_matrix = matrix
+
     for _ in range(arch_feature_dim - num_vertices):
         
         pd = (0,1,0,1)                                  #前两个0,1是沿着最后一个dim(列索引)的两边pad 0列和1列，后两个0，1沿着倒数第二个dim的两边pad 0行和1行
         pad_matrix= F.pad(pad_matrix, pd, 'constant', 0)
         
-        index = [i for i in range(len(pad_matrix))]     # 生成pad之后矩阵的列索引    
+        index = [i for i in range(len(pad_matrix))]     # pad增加一列后矩阵的列索引    
         index[-2], index[-1] = index[-1], index[-2]     # 交换最后两行的索引 [0,1,2] → [0,2,1]
         
         pad_matrix = pad_matrix[index]                  # 根据索引交换最后两行 matrix = matrix[[0,2,1]]
@@ -32,7 +34,24 @@ def adjacency_matrix_padding(matrix, arch_feature_dim, num_vertices):
     
     return pad_matrix
 
-def feature_tensor_encoding(arch, arch_feature_dim=7, arch_feature_channels=19):
+def vector_padding(vector, arch_feature_dim, num_vertices):
+    
+    assert isinstance(vector, torch.Tensor), 'vector type should be torch.Tensor'
+
+    pad_vector = vector
+    
+    for _ in range(arch_feature_dim - num_vertices):
+        
+        pd = (0,1)
+        pad_vector = F.pad(pad_vector, pd, 'constant', 0)       # 在vector最后一维pad一个0
+
+        index = [i for i in range(len(pad_vector))]
+        index[-2], index[-1] = index[-1], index[-2]
+        pad_vector = pad_vector[index]
+
+    return pad_vector
+
+def feature_tensor_encoding(arch:dict, arch_feature_dim=7, arch_feature_channels=19):
         
     matrix_ = arch['module_adjacency']
     ops_ = arch['module_operations']
@@ -45,25 +64,21 @@ def feature_tensor_encoding(arch, arch_feature_dim=7, arch_feature_channels=19):
     
     matrix = torch.tensor(matrix_)      # HW, dim=0是行索引，dim=1是列索引
     if num_vertices < arch_feature_dim:
-        matrix = adjacency_matrix_padding(matrix)
+        matrix = adjacency_matrix_padding(matrix, arch_feature_dim, num_vertices)
+    
+    arch_feature = matrix.unsqueeze(dim=0)      # arch_feature_tensor: HW → CHW, 第一维是通道，第二维是行索引，第三维是列索引
+    
+    for i, fk, pk in enumerate(zip(vertex_flops_dict_,vertex_params_dict_)):
+        
+        cell_flops = torch.tensor(vertex_flops_dict_[fk])
+        cell_params = torch.tensor(vertex_params_dict_[pk])
+
+        if num_vertices < arch_feature_dim:
+            cell_flops = vector_padding(cell_flops)
+            cell_params = vector_padding(cell_params)
 
         
-
-    
-        
-        
-    # # arch_t = torch.tensor(matrix_).unsqueeze(dim=0)      # 加一维度的通道, HW → CHW, 第一维是通道，第二维是行索引，第三维是列索引
-    
-    
-    # for i,keys in enumerate(zip(vertex_flops_dict,vertex_params_dict)):
-    #     print(i,keys)
-
-    #     import pdb;pdb.set_trace()
-
-
-
-
-
+        import pdb;pdb.set_trace()
 
 
     return
@@ -71,26 +86,28 @@ def feature_tensor_encoding(arch, arch_feature_dim=7, arch_feature_channels=19):
 
 if __name__ == "__main__":
 
-    a = [
-            [0, 1, 1, 0, 0, 0], 
-            [0, 0, 0, 1, 0, 0], 
-            [0, 0, 0, 0, 1, 0], 
-            [0, 0, 0, 0, 0, 1], 
-            [0, 0, 0, 0, 0, 1], 
-            [0, 0, 0, 0, 0, 0]]
-    a = torch.tensor(a)
-    a = adjacency_matrix_padding(a,7,len(a))
+    # for debug function [adjacency_matrix_padding]
+    # a = [[2, 2, 2, 9], 
+    #     [2, 2, 2, 9], 
+    #     [2, 2, 2, 9], 
+    #     [9, 9, 9, 9],]
+    # a = torch.tensor(a)
+    # a = adjacency_matrix_padding(a,7,len(a))
+    # print(a)
+
+    #  for debug function [vector_padding]
+    a = [2, 2, 2, 9]
+    a = torch.Tensor(a)
+    a = vector_padding(a, 7, len(a))
     print(a)
 
 
     # for test,测试从json中提出list存储的arch
-    data_path = '/home/ubuntu/workspace/nar/target.json'
-    with open(data_path, 'r') as f:
-        dataset = json.load(f)
-    f.close()
-    assert isinstance(dataset,list)
-    arch = dataset[0]
+    # data_path = '/home/ubuntu/workspace/nar/target.json'
+    # with open(data_path, 'r') as f:
+    #     dataset = json.load(f)
+    # f.close()
+    # assert isinstance(dataset,list)
+    # arch = dataset[0]
 
-    # TODO: 自定义一个arch，包含num_vertices < 7的各种情况
-
-    encoded_tensors = feature_tensor_encoding(arch)
+    # encoded_tensors = feature_tensor_encoding(arch)
