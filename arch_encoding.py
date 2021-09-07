@@ -13,6 +13,8 @@ from  torch.nn import functional as F
 
 import numpy as np
 
+type_dict = {'input':1, 'conv1x1-bn-relu':2 , 'conv3x3-bn-relu':3, 'maxpool3x3':4, 'output':5}
+
 def adjacency_matrix_padding(matrix, arch_feature_dim, num_vertices):
    
     assert isinstance(matrix, torch.Tensor), 'adjacency matrix type should be torch.Tensor'
@@ -62,26 +64,33 @@ def feature_tensor_encoding(arch:dict, arch_feature_dim=7, arch_feature_channels
 
     num_vertices = len(matrix_)
     
+    ops_vector = torch.tensor([type_dict[v] for v in ops_])     # 算子的编码
     matrix = torch.tensor(matrix_)      # HW, dim=0是行索引，dim=1是列索引
+    
     if num_vertices < arch_feature_dim:
         matrix = adjacency_matrix_padding(matrix, arch_feature_dim, num_vertices)
+        ops_vector = vector_padding(ops_vector, arch_feature_dim, num_vertices)
     
-    arch_feature = matrix.unsqueeze(dim=0)      # arch_feature_tensor: HW → CHW, 第一维是通道，第二维是行索引，第三维是列索引
+    ops_vector_matrix = torch.mul(matrix,ops_vector)
     
-    for i, fk, pk in enumerate(zip(vertex_flops_dict_,vertex_params_dict_)):
+    arch_feature = ops_vector_matrix.unsqueeze(dim=0)      # arch_feature_tensor: HW → CHW, 第一维是通道，第二维是行索引，第三维是列索引
+    
+    for _, (fk,pk) in enumerate(zip(vertex_flops_dict_,vertex_params_dict_)):
         
         cell_flops = torch.tensor(vertex_flops_dict_[fk])
         cell_params = torch.tensor(vertex_params_dict_[pk])
 
         if num_vertices < arch_feature_dim:
-            cell_flops = vector_padding(cell_flops)
-            cell_params = vector_padding(cell_params)
+            cell_flops = vector_padding(cell_flops, arch_feature_dim, num_vertices)
+            cell_params = vector_padding(cell_params, arch_feature_dim, num_vertices)
 
+        cell_flops_matrix = torch.mul(matrix,cell_flops).unsqueeze(dim=0)       # 2个操作: 首先与matrix点乘构成矩阵，其次增加通道维度HW → CHW
+        cell_params_matrix = torch.mul(matrix, cell_params).unsqueeze(dim=0)
         
-        import pdb;pdb.set_trace()
+        arch_feature = torch.cat([arch_feature,cell_flops_matrix,cell_params_matrix],dim=0)
 
-
-    return
+    assert len(arch_feature) == arch_feature_channels, 'Wrong channels of arch feature tensor'
+    return arch_feature
 
 
 if __name__ == "__main__":
@@ -96,18 +105,19 @@ if __name__ == "__main__":
     # print(a)
 
     #  for debug function [vector_padding]
-    a = [2, 2, 2, 9]
-    a = torch.Tensor(a)
-    a = vector_padding(a, 7, len(a))
-    print(a)
+    # a = [2, 2, 2, 9]
+    # a = torch.Tensor(a)
+    # a = vector_padding(a, 7, len(a))
+    # print(a)
 
 
     # for test,测试从json中提出list存储的arch
-    # data_path = '/home/ubuntu/workspace/nar/target.json'
-    # with open(data_path, 'r') as f:
-    #     dataset = json.load(f)
-    # f.close()
-    # assert isinstance(dataset,list)
-    # arch = dataset[0]
+    data_path = '/home/ubuntu/workspace/nar/target.json'
+    with open(data_path, 'r') as f:
+        dataset = json.load(f)
+    f.close()
+    assert isinstance(dataset,list)
+    arch = dataset[0]
 
-    # encoded_tensors = feature_tensor_encoding(arch)
+    encoded_arch = feature_tensor_encoding(arch)
+    print(encoded_arch)
