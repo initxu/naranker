@@ -27,15 +27,15 @@ class MultiHeadAttention(nn.Module):
     def forward(self, q, k, v, mask=None):
 
         d_k, d_v, n_head = self.d_k, self.d_v, self.n_head
-        sz_b, len_q, len_k, len_v = q.size(0), q.size(1), k.size(1), v.size(1)  # 256, 36, 36, 36
+        len_q, len_k, len_v = q.size(1), k.size(1), v.size(1)
 
-        residual = q    # (256,36,512)
+        residual = q
 
         # Pass through the pre-attention projection: b x lq x (n*dv)
         # Separate different heads: b x lq x n x dv
-        q = self.w_qs(q).view(sz_b, len_q, n_head, d_k)             # 对输入做线型变换后得到Q矩阵：36个词，每个词有8个头,每个头有64维，转为多头的格式(256, 36, 8, 64)，注意这里没有直接展开成(256,8,36,64)是因为linear输出的是dk*n_head,需要通过转置实现
-        k = self.w_ks(k).view(sz_b, len_k, n_head, d_k)             # K
-        v = self.w_vs(v).view(sz_b, len_v, n_head, d_v)             # V
+        q = self.w_qs(q).view(-1, len_q, n_head, d_k)             # 对输入做线型变换后得到Q矩阵：36个词，每个词有8个头,每个头有64维，转为多头的格式(256, 36, 8, 64)，注意这里没有直接展开成(256,8,36,64)是因为linear输出的是dk*n_head,需要通过转置实现
+        k = self.w_ks(k).view(-1, len_k, n_head, d_k)             # K
+        v = self.w_vs(v).view(-1, len_v, n_head, d_v)             # V
 
         # Transpose for attention dot product: b x n x lq x dv
         q, k, v = q.transpose(1, 2), k.transpose(1, 2), v.transpose(1, 2)   # 这里转为共8个头，每个头有36*64, (256, 8, 36, 64)
@@ -47,7 +47,7 @@ class MultiHeadAttention(nn.Module):
 
         # Transpose to move the head dimension back: b x lq x n x dv
         # Combine the last two dimensions to concatenate all the heads together: b x lq x (n*dv)
-        q = q.transpose(1, 2).contiguous().view(sz_b, len_q, -1)            # 转置[256, 36, 8, 64]后将最后两维转为n_head*dv [256,36,512]，以便送入linear
+        q = q.transpose(1, 2).contiguous().view(-1, len_q, self.n_head * self.d_v)
         q = self.dropout(self.fc(q))
         q += residual
 

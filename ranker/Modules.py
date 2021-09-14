@@ -36,10 +36,10 @@ class ScaledDotProductAttention(nn.Module):
 
     def forward(self, q, k, v, mask=None):
         """
-        q: 256,8,36,64
-        k: 256,8,36,64
-        v: 256,8,36,64
-        mask: 256,1,1,36
+        q: 256,8,19,64
+        k: 256,8,19,64
+        v: 256,8,19,64
+        mask: None
         """
 
         attn = torch.matmul(q / self.temperature, k.transpose(2, 3))    # (256,8,36,64)*(256,8,64,36)/T = (256,8,36,36) 矩阵乘法，前面的两维作为batch，后面的两维做矩阵乘法, 对应batch的二维矩阵乘，不同batch之间不会产生关系

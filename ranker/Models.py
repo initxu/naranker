@@ -1,5 +1,4 @@
 ''' Define the Transformer model '''
-
 import torch.nn as nn
 from ranker.Layers import EncoderLayer, DecoderLayer
 from ranker.Modules import PositionalEncoding
@@ -116,14 +115,14 @@ class Transformer(nn.Module):
         assert d_model == d_patch_vec, 'the dimensions of all module outputs should be the same to insure residual connections'
 
 
-    def forward(self, src_seq, trg_seq):
+    def forward(self, src_seq, trg_seq, return_attns = False):
         """
         src_seq:输入序列,(256,19)
         src_mask:输入序列的mask,None
         trg_seq:目标序列，(256,19)
         trg_mask:目标序列的mask, None
         """
-
+        # import pdb;pdb.set_trace()
         src_mask = None
         trg_mask = None
 
@@ -132,14 +131,15 @@ class Transformer(nn.Module):
 
         src_seq = self.src_prj(src_seq)                                                         # [256,19,49] → [256,19,512]
         trg_seq = self.trg_prj(trg_seq)                                                         # [1,19,49] → [1,19,512]
+        # trg_seq = torch.cat([trg_seq],dim=0)
 
         enc_output, *_ = self.encoder(src_seq, src_mask)                                        # enc_output(256,19,512)
         dec_output, *_ = self.decoder(trg_seq, trg_mask, enc_output, src_mask)                  # dec_output(256,19,512)
         
         dec_output = dec_output.view(-1, self.n_arch_patch * self.d_model)                      # [256,19,512] → [256,9728]
-        dec_output = self.tier_prj(dec_output)                                                  # [256,9728] linear → [256,4096] linear → [256,5], target is 5 tier
+        seq_logit = self.tier_prj(dec_output)                                                  # [256,9728] linear → [256,4096] linear → [256,5], target is 5 tier
         
         if self.scale_prj:
-            seq_logit = dec_output * (self.d_model ** -0.5)
+            seq_logit *= self.d_model ** -0.5
 
         return seq_logit
