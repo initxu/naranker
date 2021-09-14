@@ -41,13 +41,13 @@ class MultiHeadAttention(nn.Module):
         q, k, v = q.transpose(1, 2), k.transpose(1, 2), v.transpose(1, 2)   # 这里转为共8个头，每个头有36*64, (256, 8, 36, 64)
 
         if mask is not None:
-            mask = mask.unsqueeze(1)   # For head axis broadcasting.        # (256,1,36) → (256,1,1,36)，broadcast的规则是有一个轴等于1可以自动broadcast
+            mask = mask.unsqueeze(1)   # For head axis broadcasting.        # encoder时，(256,1,36) → (256,1,1,36)，broadcast的规则是有一个轴等于1可以自动broadcast，decoder时，[256,32,32] → [256,1,32,32]
 
         q, attn = self.attention(q, k, v, mask=mask)                        # q = [256, 8, 36, 64], attn=[256, 8, 36, 36]
 
         # Transpose to move the head dimension back: b x lq x n x dv
         # Combine the last two dimensions to concatenate all the heads together: b x lq x (n*dv)
-        q = q.transpose(1, 2).contiguous().view(sz_b, len_q, -1)            # 转置[256, 36, 8, 64]后将最后两维转为n_head*dv [256,8,512]，以便送入linear
+        q = q.transpose(1, 2).contiguous().view(sz_b, len_q, -1)            # 转置[256, 36, 8, 64]后将最后两维转为n_head*dv [256,36,512]，以便送入linear
         q = self.dropout(self.fc(q))
         q += residual
 

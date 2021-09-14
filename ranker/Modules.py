@@ -21,7 +21,7 @@ class PositionalEncoding(nn.Module):
         sinusoid_table[:, 0::2] = np.sin(sinusoid_table[:, 0::2])  # dim 2i
         sinusoid_table[:, 1::2] = np.cos(sinusoid_table[:, 1::2])  # dim 2i+1
 
-        return torch.FloatTensor(sinusoid_table).unsqueeze(0)
+        return torch.FloatTensor(sinusoid_table).unsqueeze(0)                                       # (1,200,512)
 
     def forward(self, x):
         return x + self.pos_table[:, :x.size(1)].clone().detach()                                   # 将pos_table中存储的位置参数复制一份，与输入相加。detach方法将位置编码从当前计算图中剥离，因此将不会跟踪梯度
