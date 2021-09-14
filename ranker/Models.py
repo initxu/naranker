@@ -81,9 +81,7 @@ class Transformer(nn.Module):
 
     def __init__(
             self, n_tier=5, n_arch_patch=19, d_patch=7,
-            d_patch_vec=512, 
-            
-            d_model=512, d_ffn_inner=2048, d_tier_prj_inner=4096,
+            d_patch_vec=512, d_model=512, d_ffn_inner=2048, d_tier_prj_inner=4096,
             n_layers=6, n_head=8, d_k=64, d_v=64, dropout=0.1, n_position=200,
             scale_prj=True):
 
@@ -95,8 +93,8 @@ class Transformer(nn.Module):
         self.n_arch_patch = n_arch_patch
         self.d_patch = d_patch
 
-        self.src_prj = nn.Linear(d_patch, d_patch_vec)
-        self.trg_prj = nn.Linear(d_patch, d_patch_vec)
+        self.src_prj = nn.Linear(d_patch*d_patch, d_patch_vec)
+        self.trg_prj = nn.Linear(d_patch*d_patch, d_patch_vec)
 
         self.encoder = Encoder(
             n_position=n_position, d_patch_vec=d_patch_vec, d_model=d_model, d_inner=d_ffn_inner,
