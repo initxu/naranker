@@ -1,5 +1,10 @@
-import torch
+""""
+Data: 2021/09/15
+Target: Store and Update tier Embedding
+Method: element-wise add all the embeddings belong to this tier and devided by the number of embeddings for scaling
+"""
 
+import torch
 
 class Bucket(object):
 
