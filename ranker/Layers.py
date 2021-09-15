@@ -12,9 +12,11 @@ class EncoderLayer(nn.Module):
         self.pos_ffn = PositionwiseFeedForward(d_model, d_inner, dropout=dropout)
 
     def forward(self, enc_input, slf_attn_mask=None):
+        
         enc_output, enc_slf_attn = self.slf_attn(
-            enc_input, enc_input, enc_input, mask=slf_attn_mask)                    # 3个相同的input做输入 (256,19,512), 输出enc_output[256,19,512]和enc_slf_attn[256,19,49,49]
-        enc_output = self.pos_ffn(enc_output)                                       # 由于这里是position-wise，即长度为36的序列中每个词的注意力做ffn，因此输入的矩阵形式一定是bach×seq_len×(d_k*n_head),ffn是对最后一个维度d_k*n_head做前馈
+            enc_input, enc_input, enc_input, mask=slf_attn_mask)                    # 3个相同的input做输入 (256,19,512), 输出enc_output[256,19,512]和enc_slf_attn[256,8,19,19]
+        
+        enc_output = self.pos_ffn(enc_output)                                       # 由于这里是position-wise，即长度为19的序列中每个词的注意力做ffn，因此输入的矩阵形式一定是bach×seq_len×(d_k*n_head),ffn是对最后一个维度d_k*n_head做前馈
 
         return enc_output, enc_slf_attn                                             # enc_output [256, 19, 512], 长度为36的序列，每个word对应的8个头的注意力加权输出
 

@@ -93,7 +93,7 @@ class Transformer(nn.Module):
         self.d_patch = d_patch
 
         self.src_prj = nn.Linear(d_patch*d_patch, d_patch_vec)
-        self.trg_prj = nn.Linear(d_patch*d_patch, d_patch_vec)
+        self.trg_prj = nn.Linear(d_patch_vec, d_patch_vec)
 
         self.encoder = Encoder(
             n_position=n_position, d_patch_vec=d_patch_vec, d_model=d_model, d_inner=d_ffn_inner,
@@ -119,19 +119,16 @@ class Transformer(nn.Module):
         """
         src_seq:输入序列,(256,19)
         src_mask:输入序列的mask,None
-        trg_seq:目标序列，(256,19)
+        trg_seq:目标序列，(1,19,512)
         trg_mask:目标序列的mask, None
         """
-        # import pdb;pdb.set_trace()
         src_mask = None
         trg_mask = None
 
         src_seq = src_seq.view(-1, self.n_arch_patch, self.d_patch*self.d_patch)                # [256,19,7,7] → [256,19,49]
-        trg_seq = trg_seq.view(-1, self.n_arch_patch, self.d_patch*self.d_patch)                # [1,19,7,7] → [1,19,49]
 
         src_seq = self.src_prj(src_seq)                                                         # [256,19,49] → [256,19,512]
-        trg_seq = self.trg_prj(trg_seq)                                                         # [1,19,49] → [1,19,512]
-        # trg_seq = torch.cat([trg_seq],dim=0)
+        trg_seq = self.trg_prj(trg_seq)                                                         # [1,19,512] → [1,19,512]
 
         enc_output, *_ = self.encoder(src_seq, src_mask)                                        # enc_output(256,19,512)
         dec_output, *_ = self.decoder(trg_seq, trg_mask, enc_output, src_mask)                  # dec_output(256,19,512)
