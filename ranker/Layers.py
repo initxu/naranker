@@ -1,4 +1,3 @@
-''' Define the Layers '''
 import torch.nn as nn
 from ranker.SubLayers import MultiHeadAttention, PositionwiseFeedForward
 

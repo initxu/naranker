@@ -1,4 +1,3 @@
-''' Define the Transformer model '''
 import torch.nn as nn
 from ranker.Layers import EncoderLayer, DecoderLayer
 from ranker.Modules import PositionalEncoding

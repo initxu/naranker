@@ -1,4 +1,3 @@
-''' Define the sublayers in encoder/decoder layer '''
 import torch.nn as nn
 import torch.nn.functional as F
 from ranker.Modules import ScaledDotProductAttention
