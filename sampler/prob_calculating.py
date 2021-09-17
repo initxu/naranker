@@ -20,7 +20,7 @@ def compute_constraint_value(value, step):
     return int(math.ceil(value/step) * step)            # ceil
 
 def convert_count_to_prob(counts_dict):
-    import pdb;pdb.set_trace()
+
     total = sum(counts_dict.values())
     for idx in counts_dict:
         counts_dict[idx] = 1.0 * counts_dict[idx] / total
@@ -42,7 +42,7 @@ def build_prob_list(raw_list, batch_min, batch_max, bins=8):
         counts_dict[value] += 1
 
     counts_dict = convert_count_to_prob(counts_dict)
-    import pdb;pdb.set_trace()
+
     return counts_dict
 
 if __name__ == '__main__':
