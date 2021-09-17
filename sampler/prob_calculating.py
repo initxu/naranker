@@ -1,11 +1,9 @@
 """"
 Data: 2021/09/16
 Target: Calculate the probability and distribution of the FLOPS, Parametes, opts
-Method: random.choices(seq, weights=prob)https://docs.python.org/3/library/random.html
+Method: Distribution and probability are modified from AttentiveNAS
 """
 
-import torch 
-import random
 import math
 import torch.nn.functional as F
 
@@ -65,10 +63,3 @@ if __name__ == '__main__':
     l1 = build_prob_list(params_list, batch_min = min_p, batch_max = max_p)
     print(l1)
     
-
-
-
-
-    
-
-# random.choice(seq, weights=prob)
