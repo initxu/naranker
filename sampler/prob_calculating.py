@@ -28,7 +28,7 @@ def convert_count_to_prob(counts_dict):
     return counts_dict
 
 def build_prob_list(raw_list, batch_min, batch_max, bins=8):        
-    # 输入的是raw_list是tier的list, 但是min和max是batch的最大最小值，因为对于一个batch预测出的多个tier，为了计算其分布的相同，起始和终止点应该相同
+    # 输入的是raw_list是tier的list, 但是min和max是batch的最大最小值，因为对于一个batch预测出的多个tier，为了对比分布的差异，起始和终止点应该相同
     
     raw_list.sort()
     step = int((batch_max-batch_min)/(bins-1))
