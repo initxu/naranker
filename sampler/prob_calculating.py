@@ -6,6 +6,7 @@ Method: random.choices(seq, weights=prob)https://docs.python.org/3/library/rando
 
 import torch 
 import random
+import math
 import torch.nn.functional as F
 
 def compute_kl_div(input_seq, target_seq): 
@@ -15,9 +16,8 @@ def compute_kl_div(input_seq, target_seq):
     return kl_value
 
 
-def round_value(value, step):
-    # AttentiveNAS
-    return int(round(value / step) * step)
+def compute_constraint_value(value, step):
+    return int(math.ceil(value/step) * step)            # ceil
 
 def convert_count_to_prob(counts_dict):
     import pdb;pdb.set_trace()
@@ -27,18 +27,22 @@ def convert_count_to_prob(counts_dict):
     
     return counts_dict
 
-
 def build_prob_list(raw_list, batch_min, batch_max, bins=8):        
-    # 输入的是raw_list是tier的list, 但是min和max是batch，因为对于一个batch预测出的多个tier，为了计算其分布的相同，起始和终止点应该相同
+    # 输入的是raw_list是tier的list, 但是min和max是batch的最大最小值，因为对于一个batch预测出的多个tier，为了计算其分布的相同，起始和终止点应该相同
+    
     raw_list.sort()
     step = int((batch_max-batch_min)/(bins-1))
+    
     counts_dict = {}
+    for i in range(1, bins+1):  # 生成constraint bin 字典，存储每个小于constraint的子网的计数
+        counts_dict[i * step] = 0
+    
     for value in raw_list:
-        value = round_value(value, step)
-        counts_dict[value] = counts_dict.get(value, 0) + 1
+        value = compute_constraint_value(value, step)
+        counts_dict[value] += 1
 
     counts_dict = convert_count_to_prob(counts_dict)
-    
+    import pdb;pdb.set_trace()
     return counts_dict
 
 if __name__ == '__main__':
