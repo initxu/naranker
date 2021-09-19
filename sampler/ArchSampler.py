@@ -16,7 +16,7 @@ input: 1 batch_statics_dict =
             } # tier是counts_dict
 """
 import random
-from prob_calculating import select_distri, extract_dict_value_to_list
+from prob_calculate import select_distri, extract_dict_value_to_list
 
 def sample_helper(disti_dict):
     target_list = extract_dict_value_to_list(disti_dict, is_key= True)      # 提取计数, key
