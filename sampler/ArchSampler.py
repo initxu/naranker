@@ -150,7 +150,7 @@ if __name__ == '__main__':
     #  for test __sample_edges_and_types
     type_dict = {'input':1, 'conv1x1-bn-relu':2 , 'conv3x3-bn-relu':3, 'maxpool3x3':4, 'output':5}
     sampler = ArchSampler(n_tier=1,threshold_kl_div=27,batch_size=423,batch_factor=1,reuse_step=10,node_type_dict=type_dict)
-    v = sampler._sample_edges_and_types(7,[66])
+    v = sampler._sample_edges_and_types(7,[7])
     print(v)
 
     
