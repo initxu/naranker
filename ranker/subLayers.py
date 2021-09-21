@@ -1,6 +1,6 @@
 import torch.nn as nn
 import torch.nn.functional as F
-from ranker.Modules import ScaledDotProductAttention
+from ranker.modules import ScaledDotProductAttention
 
 class MultiHeadAttention(nn.Module):
     ''' Multi-Head Attention module '''

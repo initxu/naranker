@@ -7,9 +7,6 @@ Method: 利用transformer, Encoder输入采样结构的编码，对邻接矩阵p
 Reference: https://github.com/jadore801120/attention-is-all-you-need-pytorch.git
 """
 
-import ranker.Models
-import ranker.Layers
-import ranker.SubLayers
-import ranker.Modules
+from ranker.models import Transformer
 
-__all__ = [ranker.Models, ranker.Layers, ranker.SubLayers, ranker.Modules]
+__all__ = [Transformer]

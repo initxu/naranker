@@ -1,6 +1,6 @@
 import torch.nn as nn
-from ranker.Layers import EncoderLayer, DecoderLayer
-from ranker.Modules import PositionalEncoding
+from ranker.layers import EncoderLayer, DecoderLayer
+from ranker.modules import PositionalEncoding
 
 class Encoder(nn.Module):
     ''' A encoder model with self attention mechanism. '''
