@@ -1,5 +1,5 @@
 import torch.nn as nn
-from ranker.subLayers import MultiHeadAttention, PositionwiseFeedForward
+from ranker.sublayers import MultiHeadAttention, PositionwiseFeedForward
 
 
 class EncoderLayer(nn.Module):
