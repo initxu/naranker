@@ -10,7 +10,7 @@ MAXPOOL3X3 = 'maxpool3x3'
 NODE_TYPE = [DUMMY, INPUT, CONV1X1, CONV3X3, MAXPOOL3X3, OUTPUT]
 
 
-def seq_to_arch(seq):
+def seq_decode_to_arch(seq):
     n_nodes = seq[0]
 
     opt = [INPUT]
@@ -51,4 +51,4 @@ if __name__ == '__main__':
     seq_7 = [7, 0, 4, 0, 2, 2, 2, 3, 2, 0, 2, 5, 0, 1, 2, 4, 0, 2]
     seq_5 = [5, 0, 2, 0, 2, 0, 3, 3, 0, 3, 3, 4, 2, 3, None, None, 3, 4]
     seq__77 = [7, 0, 4, 1, 3, 0, 4, 2, 3, 2, 4, 1, 4, 6, 2, 5, None, None]
-    print(seq_to_arch(seq_5))
+    print(seq_decode_to_arch(seq_5))

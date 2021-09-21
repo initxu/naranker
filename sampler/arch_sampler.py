@@ -17,7 +17,9 @@ input: 1 batch_statics_dict =
 """
 import random
 
+
 from .prob_calculate import select_distri, extract_dict_value_to_list
+from architecture import ModelSpec, seq_decode_to_arch
 
 def sample_helper(disti_dict):
     target_list = extract_dict_value_to_list(disti_dict, is_key= True)      # 提取计数, key
@@ -90,20 +92,23 @@ class ArchSampler(object):
         assert len(arch_struct_list) == self.max_edges * 2, 'Wrong length of sampled arch_struct_list'
         return arch_struct_list
 
-    def sample_subnets(self, batch_statics_dict, n_subnets, kl_factor_list=[1,1,1]):
+    def sample_arch(self, batch_statics_dict, n_subnets, kl_factor_list=[1,1,1], max_trails=100):
         self.reset_parameters(batch_statics_dict)       # update batch statics with new batch
         flops_kl_factor = kl_factor_list[0]
         params_kl_factor = kl_factor_list[1]
         n_nodes_kl_factor = kl_factor_list[2]
 
+        sampled_arch = []
         flops, params, n_nodes = 0,0,0
 
         self.reuse_step = 1 if self.reuse_step is None else self.reuse_step
         assert self.reuse_step > 0, 'the reuse step must greater than 0'
-        for i in range(n_subnets):
+        
+        reuse_count = 0
+        while len(sampled_arch) < n_subnets:
             # FLOPS和params可重复若干个采样过程使用，提高采样速度
             # step1 sample flops and params constraints
-            if i % self.reuse_step == 0:
+            if reuse_count % self.reuse_step == 0:
                 # sample target flops
                 batch_flops_list = self.batch_flops_list
                 flops = self._sample_target_value(batch_flops_list, flops_kl_factor)
@@ -112,18 +117,28 @@ class ArchSampler(object):
                 batch_params_list = self.batch_params_list
                 params = self._sample_target_value(batch_params_list, params_kl_factor)
 
-            arch_struct_list = []   # store arch
+            for trail in range(max_trails+1):
+                arch_struct_list = []   # store arch
+                
+                # step2 sample target n_nodes
+                # n_nodes_list一个cell总的节点数, 也即是包括input和output节点的
+                batch_n_nodes_list = self.batch_n_nodes_list
+                n_nodes = self._sample_target_value(batch_n_nodes_list,n_nodes_kl_factor)
+                arch_struct_list.append(n_nodes)
+                
+                # step3 sample nodes type and connectoin
+                arch_struct_list = self._sample_edges_and_types(n_nodes, arch_struct_list)       # 这里的节点要包括input和output节点数
+
+                # step4 check wheth satisfy the flops and params constraints
+                matrix, opt = seq_decode_to_arch(arch_struct_list)
+                arch_spec = ModelSpec(matrix=matrix, ops=opt)
+                # TODO: 查询数据集，query到flops和params，判断是否满足，满足则sampled_arch.append()且break，否则continue
             
-            # step2 sample target n_nodes
-            # n_nodes_list一个cell总的节点数, 也即是包括input和output节点的
-            batch_n_nodes_list = self.batch_n_nodes_list
-            n_nodes = self._sample_target_value(batch_n_nodes_list,n_nodes_kl_factor)
-            arch_struct_list.append(n_nodes)
+            sampled_arch.append(arch_spec)  # break时append，若不满足条件，采样max_trails+1个
+            reuse_count +=1
+
             
-            # step4 sample nodes type and connectoin
-            arch_struct_list = self._sample_edges_and_types(n_nodes, arch_struct_list)       # 这里的节点要包括input和output节点数
-            
-        return flops, params, arch_struct_list
+        raise NotImplementedError
     
         
 

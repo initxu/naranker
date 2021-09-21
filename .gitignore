@@ -131,3 +131,6 @@ dmypy.json
 # Data directory and file
 data
 *.json
+
+# Test and debug
+test.py
