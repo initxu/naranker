@@ -1,3 +1,3 @@
-from .nasbench import NASBenchDataBase
+from .nasbench import NASBenchDataBase, NASBenchDataset
 
-__all__ = [NASBenchDataBase]
+__all__ = [NASBenchDataBase, NASBenchDataset]
