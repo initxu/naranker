@@ -11,8 +11,6 @@ import numpy as np
 
 from .graph_util import hash_module
 
-VALID_OPERATIONS = ['conv3x3-bn-relu', 'conv1x1-bn-relu', 'maxpool3x3']
-
 class ModelSpec(object):
   """Model specification given adjacency matrix and labeling."""
 
@@ -104,7 +102,7 @@ class ModelSpec(object):
     for index in sorted(extraneous, reverse=True):
       del self.ops[index]
 
-  def hash_spec(self):
+  def hash_spec(self, valid_opt_list: list):
     """Computes the isomorphism-invariant graph hash of this spec.
 
     Args:
@@ -115,7 +113,7 @@ class ModelSpec(object):
       MD5 hash of this spec which can be used to query the dataset.
     """
     # Invert the operations back to integer label indices used in graph gen.
-    labeling = [-1] + [VALID_OPERATIONS.index(op) for op in self.ops[1:-1]] + [-2]
+    labeling = [-1] + [valid_opt_list.index(op) for op in self.ops[1:-1]] + [-2]
     return hash_module(self.matrix, labeling)
 
 def is_upper_triangular(matrix):
