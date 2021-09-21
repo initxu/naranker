@@ -4,6 +4,8 @@ Target: arch encoding and decode, tier embedding
 """
 
 from architecture.bucket import Bucket
-from architecture.nasbench import NASBenchArchitecture
+from architecture.nasbench import ModelSpec
 
-__all__ = [Bucket, NASBenchArchitecture]
+from architecture.arch_encode import feature_tensor_encoding
+
+__all__ = [Bucket, ModelSpec, feature_tensor_encoding]

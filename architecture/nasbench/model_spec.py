@@ -10,7 +10,7 @@ Apache License 2.0: https://github.com/google-research/nasbench/blob/master/LICE
 import copy
 import numpy as np
 
-from graph_util import hash_module
+from .graph_util import hash_module
 
 class ModelSpec(object):
   """Model specification given adjacency matrix and labeling."""
