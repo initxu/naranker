@@ -1,3 +1,15 @@
+"""
+Date: 2021/09/21
+Target: Load entire dataset from json file 
+        query by spec and hash 
+        check whether the passed spec is inside the dataset
+
+Note: Do Not use query by hash when benchmarking
+
+Modified from https://github.com/google-research/nasbench
+Apache License 2.0: https://github.com/google-research/nasbench/blob/master/LICENSE
+"""
+
 import json
 import time
 import copy
@@ -10,7 +22,6 @@ MAX_EDGES = 9
 INPUT = 'input'
 OUTPUT = 'output'
 VALID_OPERATIONS = ['conv3x3-bn-relu', 'conv1x1-bn-relu', 'maxpool3x3']
-
 
 class NASBenchDataBase(object):
     def __init__(self, data_file):
