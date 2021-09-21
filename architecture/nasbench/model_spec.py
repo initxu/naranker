@@ -1,7 +1,6 @@
 """Model specification for module connectivity individuals.
 
-This module handles pruning the unused parts of the computation graph but should
-avoid creating any TensorFlow models (this is done inside model_builder.py).
+This module handles pruning the unused parts of the computation graph and generating hash for query
 
 Modified from https://github.com/google-research/nasbench
 Apache License 2.0: https://github.com/google-research/nasbench/blob/master/LICENSE
@@ -11,6 +10,8 @@ import copy
 import numpy as np
 
 from .graph_util import hash_module
+
+VALID_OPERATIONS = ['conv3x3-bn-relu', 'conv1x1-bn-relu', 'maxpool3x3']
 
 class ModelSpec(object):
   """Model specification given adjacency matrix and labeling."""
@@ -103,18 +104,18 @@ class ModelSpec(object):
     for index in sorted(extraneous, reverse=True):
       del self.ops[index]
 
-  def hash_spec(self, canonical_ops):
+  def hash_spec(self):
     """Computes the isomorphism-invariant graph hash of this spec.
 
     Args:
-      canonical_ops: list of operations in the canonical ordering which they
-        were assigned (i.e. the order provided in the config['available_ops']).
+      canonical_ops: list of operations in the VALID_OPERATIONS ordering.
+      ['conv3x3-bn-relu', 'conv1x1-bn-relu', 'maxpool3x3']
 
     Returns:
       MD5 hash of this spec which can be used to query the dataset.
     """
     # Invert the operations back to integer label indices used in graph gen.
-    labeling = [-1] + [canonical_ops.index(op) for op in self.ops[1:-1]] + [-2]
+    labeling = [-1] + [VALID_OPERATIONS.index(op) for op in self.ops[1:-1]] + [-2]
     return hash_module(self.matrix, labeling)
 
 def is_upper_triangular(matrix):
