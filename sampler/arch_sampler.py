@@ -17,9 +17,10 @@ input: 1 batch_statics_dict =
 """
 import random
 
+from architecture import ModelSpec, seq_decode_to_arch
+from dataset import SplitSubet
 
 from .prob_calculate import select_distri, extract_dict_value_to_list
-from architecture import ModelSpec, seq_decode_to_arch
 
 def sample_helper(disti_dict):
     target_list = extract_dict_value_to_list(disti_dict, is_key= True)      # 提取计数, key
@@ -92,13 +93,14 @@ class ArchSampler(object):
         assert len(arch_struct_list) == self.max_edges * 2, 'Wrong length of sampled arch_struct_list'
         return arch_struct_list
 
-    def sample_arch(self, batch_statics_dict, n_subnets, kl_factor_list=[1,1,1], max_trails=100):
+    def sample_arch(self, batch_statics_dict, n_subnets, dataset: SplitSubet, kl_factor_list=[1,1,1], max_trails=100):
         self.reset_parameters(batch_statics_dict)       # update batch statics with new batch
         flops_kl_factor = kl_factor_list[0]
         params_kl_factor = kl_factor_list[1]
         n_nodes_kl_factor = kl_factor_list[2]
 
         sampled_arch = []
+        sampled_arch_datast_idx = []
         flops, params, n_nodes = 0,0,0
 
         self.reuse_step = 1 if self.reuse_step is None else self.reuse_step
@@ -132,13 +134,19 @@ class ArchSampler(object):
                 # step4 check wheth satisfy the flops and params constraints
                 matrix, opt = seq_decode_to_arch(arch_struct_list)
                 arch_spec = ModelSpec(matrix=matrix, ops=opt)
-                # TODO: 查询数据集，query到flops和params，判断是否满足，满足则sampled_arch.append()且break，否则continue
+
+                # 查询训练集，query到flops和params，判断是否满足，满足则sampled_arch.append()且break，否则continue
+                f, p, dataset_idx = dataset.query_stats_by_spec(arch_spec)
+                if f is None or p is None:  # 检查采样结构是否在训练集中，不在则继续采样
+                    continue
+                if f <= flops and p <= params:  # 检查采样结构是否满足constrains，满足则停止采样
+                    break
             
-            sampled_arch.append(arch_spec)  # break时append，若不满足条件，采样max_trails+1个
+            sampled_arch.append(arch_spec)  # append请: 1满足条件时：break时append，2若不满足条件，采样max_trails+1个放入
+            sampled_arch_datast_idx.append(dataset_idx)
             reuse_count +=1
 
-            
-        raise NotImplementedError
+        return sampled_arch, sampled_arch_datast_idx
     
         
 

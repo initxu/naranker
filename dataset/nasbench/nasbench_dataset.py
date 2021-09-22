@@ -12,11 +12,12 @@ class NASBenchDataset(Dataset):
         self.database = database
         g_cpu = torch.Generator()   # 因为是在cpu读json数据并shuffle
         g_cpu.manual_seed(seed)
-        self.keys_list = torch.randperm(self.database.size, generator=g_cpu).tolist()
+        self.index_list = torch.randperm(self.database.size, generator=g_cpu).tolist()
+        self.keys_list = list(self.database.hash_iterator())
 
 
     def __getitem__(self, index):
-        model_hash = list(self.database.hash_iterator())[self.keys_list[index]]
+        model_hash = self.keys_list[self.index_list[index]]
         arch = self.database.query_by_hash(model_hash)
         
         arch_feature = feature_tensor_encoding(copy.deepcopy(arch))
