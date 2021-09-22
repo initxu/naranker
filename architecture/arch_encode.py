@@ -11,7 +11,6 @@ Output: torch.Tensor(C,H,W) default= 19*7*7 for nasbench101
 
 import json
 import torch
-
 from  torch.nn import functional as F
 
 

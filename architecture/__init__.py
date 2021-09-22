@@ -5,7 +5,6 @@ Target: arch encoding and decode, tier embedding
 
 from .bucket import Bucket
 from .nasbench import ModelSpec
-
 from .arch_encode import feature_tensor_encoding
 from .seq_to_arch import seq_decode_to_arch
 
