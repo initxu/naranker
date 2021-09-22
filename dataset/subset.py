@@ -19,7 +19,9 @@ class SplitSubet(Dataset):
 
     def query_stats_by_spec(self, model_spec: ModelSpec):
         # step1: 找到spec对应的hash
-        arch_dict = self.full_dataset.database.query_by_spec(model_spec)
+        arch_dict = self.full_dataset.database.check_arch_inside_dataset(model_spec)
+        if arch_dict is None:
+            return None, None, None
         model_hash = arch_dict['unique_hash']
 
         # step2: 找到hash在keys_list的下标

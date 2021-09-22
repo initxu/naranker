@@ -23,6 +23,7 @@ INPUT = 'input'
 OUTPUT = 'output'
 VALID_OPERATIONS = ['conv3x3-bn-relu', 'conv1x1-bn-relu', 'maxpool3x3']
 
+
 class NASBenchDataBase(object):
     def __init__(self, data_file):
         self.archs = {}
@@ -69,6 +70,7 @@ class NASBenchDataBase(object):
 
     def query_by_hash(self, arch_hash):
         # 注意要deepcopy，而不是直接=给引用
+        # 仅当query的hash确定在archs可以调用
         arch_data_dict = copy.deepcopy(self.archs[arch_hash])
         return arch_data_dict
 
@@ -76,6 +78,18 @@ class NASBenchDataBase(object):
         self._check_spec(model_spec)
         arch_hash = self._hash_spec(model_spec)
 
+        return self.query_by_hash(arch_hash)
+
+    def check_arch_inside_dataset(self, model_spec: ModelSpec):
+        # 当hash不知道是否存在时
+        try:
+            self._check_spec(model_spec)
+        except ValueError:
+            return None
+        
+        arch_hash = self._hash_spec(model_spec)
+        if arch_hash not in list(self.archs.keys()):
+            return None
         return self.query_by_hash(arch_hash)
 
     def hash_iterator(self):

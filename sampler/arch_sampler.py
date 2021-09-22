@@ -137,13 +137,17 @@ class ArchSampler(object):
 
                 # 查询训练集，query到flops和params，判断是否满足，满足则sampled_arch.append()且break，否则continue
                 f, p, dataset_idx = dataset.query_stats_by_spec(arch_spec)
-                if f is None or p is None:  # 检查采样结构是否在训练集中，不在则继续采样
+                if dataset_idx is None:  # 检查采样结构是否在训练集中，不在则继续采样
                     continue
                 if f <= flops and p <= params:  # 检查采样结构是否满足constrains，满足则停止采样
                     break
             
-            sampled_arch.append(arch_spec)  # append请: 1满足条件时：break时append，2若不满足条件，采样max_trails+1个放入
             sampled_arch_datast_idx.append(dataset_idx)
+            if dataset_idx is None:
+                sampled_arch.append(None)
+            else:
+                sampled_arch.append(arch_spec)  # append请: 1满足条件时：break时append，2若不满足条件，采样max_trails+1个放入
+            
             reuse_count +=1
 
         return sampled_arch, sampled_arch_datast_idx
