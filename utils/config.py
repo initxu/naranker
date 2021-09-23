@@ -9,7 +9,6 @@ import os
 import yaml
 
 
-
 class LoaderMeta(type):
     """
     Constructor for supporting `!include`.
@@ -114,10 +113,13 @@ class AttrDict(dict):
 
 class Config(AttrDict):
     def __init__(self, filename=None):
-        assert os.path.exists(filename), 'File {} not exist.'.format(filename)
         try:
             with open(filename, 'r') as f:
                 cfg_dict = yaml.load(f, Loader)
         except EnvironmentError:
             print('Please check the file with name of "%s"', filename)
         super(Config, self).__init__(cfg_dict)
+
+def get_config(config_file):
+    assert os.path.exists(config_file), 'File {} not exist.'.format(config_file)
+    return Config(config_file)

@@ -1,7 +1,7 @@
-import torch
-import random
 import os
 import sys
+import torch
+import random
 import logging
 import numpy as np
 
@@ -9,16 +9,16 @@ import numpy as np
 def set_reproducible(seed=20211117):
     # there are still other seed to set, NASBenchDataset, Dataloader
     # Ref: https://pytorch.org/docs/stable/notes/randomness.html
-    torch.manual_seed(seed)
     random.seed(seed)
     np.random.seed(seed)
+    torch.manual_seed(seed)  # for cpu
+    torch.cuda.manual_seed(seed)  # for single cuda
+    torch.cuda.manual_seed_all(seed)  # for mult gpus
     torch.backends.cudnn.benchmark = False  # Disable conv opts benchmarking
     torch.backends.cudnn.deterministic = True  # make sure the conv algos are deterministic themselves
 
 
 def setup_logger(save_path=None, mode='a') -> logging.Logger:
-    
-
     logger = logging.getLogger()
     logger.setLevel(logging.DEBUG)  # 所有位于DEBUG级别以上的log信息都会被打印
     logger.propagate = False  # 防止日志记录向上层logger传递
@@ -31,8 +31,8 @@ def setup_logger(save_path=None, mode='a') -> logging.Logger:
             os.remove(save_path)
         log_file = open(save_path, 'w')
         log_file.close()
-        
-        file_handler = logging.FileHandler(save_path, mode=mode)        # append mode
+
+        file_handler = logging.FileHandler(save_path, mode=mode)  # append mode
         file_handler.setLevel(logging.DEBUG)
         file_handler.setFormatter(formatter)
         logger.addHandler(file_handler)
