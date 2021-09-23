@@ -133,4 +133,6 @@ data
 *.json
 
 # Test and debug
-test.py
+debug.py
+# events.out.tfevents*
+output/

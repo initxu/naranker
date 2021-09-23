@@ -20,10 +20,10 @@ def get_args():
                         default='./output',
                         type=str,
                         help='Path to save output')
-    parser.add_argument('--log_path',
-                        default='./train.log',
-                        type=str,
-                        help='Path to save log')
+    # parser.add_argument('--log_path',
+    #                     default='./train.log',
+    #                     type=str,
+    #                     help='Path to save log')
 
     args = parser.parse_args()
 
@@ -35,16 +35,18 @@ def build_arg_and_env(run_args):
 
     args.config_file = run_args.config_file
     args.data_path = run_args.data_path
-    args.log_path = run_args.log_path
+    # args.log_path = run_args.log_path
 
-    if not os.path.exists(run_args.save_dir):   # 创建总output文件存放各种实验
+    if not os.path.exists(run_args.save_dir):  # 创建output文件存放各种实验文件夹
         os.makedirs(run_args.save_dir)
-    import pdb;pdb.set_trace()
-    args.save_dir = os.path.join(run_args.save_dir, args.exp_name + '_' + time.strftime('%Y%m%d%H%M%S', time.localtime()))
-    import pdb;pdb.set_trace()
+
+    args.save_dir = os.path.join(
+        run_args.save_dir,
+        args.exp_name + '_' + time.strftime('%Y%m%d%H%M%S', time.localtime()))
+
     if not os.path.exists(args.save_dir):
-        os.makedirs(args.save_dir)              # 创建当前实验的文件夹
-    
+        os.makedirs(args.save_dir)  # 创建当前实验的文件夹
+
     return args
 
 
@@ -52,12 +54,15 @@ def main():
     run_args = get_args()
     args = build_arg_and_env(run_args)
 
-    logger = setup_logger(save_path=args.log_path)
+    logger = setup_logger(save_path=os.path.join(args.save_dir, "train.log"))
+    logger.info(args)
+
+    tb_writer = SummaryWriter(args.save_dir)
 
     set_reproducible(seed=args.seed)
-    logger.info('set global rand seed at {}'.format(args.seed))
+    logger.info('set global random seed = {}'.format(args.seed))
 
-    logger.info(args)
+    # build dataloader
 
 
 if __name__ == '__main__':
