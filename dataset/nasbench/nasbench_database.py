@@ -81,7 +81,7 @@ class NASBenchDataBase(object):
         return self.query_by_hash(arch_hash)
 
     def check_arch_inside_dataset(self, model_spec: ModelSpec):
-        # 当hash不知道是否存在时
+        # 当hash不知道是否存在时使用此模块
         try:
             self._check_spec(model_spec)
         except ValueError:
