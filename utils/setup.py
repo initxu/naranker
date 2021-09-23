@@ -6,9 +6,8 @@ import logging
 import numpy as np
 
 
-def set_reproducible(seed=20211117):
-    # there are still other seed to set, NASBenchDataset, Dataloader
-    # Ref: https://pytorch.org/docs/stable/notes/randomness.html
+def setup_seed(seed=20211117):
+    # there are still other seed to set, NASBenchDataset
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)  # for cpu
@@ -16,7 +15,6 @@ def set_reproducible(seed=20211117):
     torch.cuda.manual_seed_all(seed)  # for mult gpus
     torch.backends.cudnn.benchmark = False  # Disable conv opts benchmarking
     torch.backends.cudnn.deterministic = True  # make sure the conv algos are deterministic themselves
-
 
 def setup_logger(save_path=None, mode='a') -> logging.Logger:
     logger = logging.getLogger()

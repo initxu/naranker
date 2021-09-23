@@ -3,7 +3,6 @@ Date: 2021/09/23
 Target: config utilities for yml file.
 
 implementation adapted from Slimmable: https://github.com/JiahuiYu/slimmable_networks.git
-
 """
 import os
 import yaml
