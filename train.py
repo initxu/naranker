@@ -3,6 +3,7 @@ import time
 import argparse
 import torch.utils.data
 import torch.optim as optim
+from tqdm import tqdm
 from torch.utils.tensorboard import SummaryWriter
 
 
@@ -21,7 +22,7 @@ def get_args():
                         type=str,
                         help='training configuration')
     parser.add_argument('--data_path',
-                        default='./target.json',
+                        default='./data/nasbench_only108_with_vertex_flops_and_params_42362.json',
                         type=str,
                         help='Path to load data')
     parser.add_argument('--save_dir',
@@ -119,7 +120,7 @@ def main():
     ranker.cuda(device)
 
     # build optimizer and lr_scheduler
-    optimizer = optim.Adam(
+    optimizer = optim.AdamW(
         ranker.parameters(),
         betas=args.optimizer.betas,
         eps=args.optimizer.eps,
@@ -132,7 +133,10 @@ def main():
         d_model=args.ranker.d_model,
         n_warmup_steps=args.lr_scheduler.n_warmup_steps)
 
+    
     for epoch in range(args.start_epochs, args.ranker_epochs):
+        
+        logger.info()
 
 
 
