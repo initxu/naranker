@@ -5,6 +5,7 @@ Method: element-wise add all the embeddings belong to this tier and devided by t
 """
 
 import torch
+import copy
 
 class Bucket(object):
 
@@ -28,7 +29,7 @@ class Bucket(object):
         Bucket.n_tier += 1
 
     def get_bucket_emb(self):
-        return self.current_bucket_emb
+        return copy.deepcopy(self.current_bucket_emb)
 
     def updata_bucket_emb(self, input_emb):     # input_emb[n, 19, 512]
         assert self._n_arch_patch == input_emb.size(1), "Wrong patch length"
