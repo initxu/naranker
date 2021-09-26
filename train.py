@@ -3,7 +3,6 @@ import time
 import argparse
 import torch.utils.data
 import torch.optim as optim
-from tqdm import tqdm
 from torch.utils.tensorboard import SummaryWriter
 
 
@@ -13,16 +12,17 @@ from utils.setup import setup_seed, setup_logger
 from utils.config import get_config
 from utils.loss_ops import CrossEntropyLossSoft
 from utils.optim import LRScheduler
+from utils.train_epoch import train_epoch
 
 
 def get_args():
     parser = argparse.ArgumentParser(description='NAR Training')
     parser.add_argument('--config_file',
-                        default=None,
+                        default='./config.yml',
                         type=str,
                         help='training configuration')
     parser.add_argument('--data_path',
-                        default='./data/nasbench_only108_with_vertex_flops_and_params_42362.json',
+                        default='./data/nasbench101/nasbench_only108_with_vertex_flops_and_params_42362.json',
                         type=str,
                         help='Path to load data')
     parser.add_argument('--save_dir',
@@ -62,7 +62,7 @@ def main():
     logger = setup_logger(save_path=os.path.join(args.save_dir, "train.log"))
     logger.info(args)
     # setup tensorboard
-    tb_writer = SummaryWriter(args.save_dir)
+    tb_writer = SummaryWriter(os.path.join(args.save_dir,'tensorboard'))
 
     # setup global seed
     setup_seed(seed=args.seed)
@@ -102,6 +102,7 @@ def main():
     criterion = CrossEntropyLossSoft().cuda(device)
 
     # build model
+    logger.info('Building model with {}'.format(args.ranker))
     ranker = Transformer(
         n_tier=args.ranker.n_tier,
         n_arch_patch=args.ranker.n_arch_patch,
@@ -120,9 +121,10 @@ def main():
     ranker.cuda(device)
 
     # build optimizer and lr_scheduler
+    logger.info('Building optimizer and lr_scheduler')
     optimizer = optim.AdamW(
         ranker.parameters(),
-        betas=args.optimizer.betas,
+        betas=(args.optimizer.beta1,args.optimizer.beta2),
         eps=args.optimizer.eps,
         weight_decay=args.optimizer.weight_decay)
     
@@ -133,10 +135,14 @@ def main():
         d_model=args.ranker.d_model,
         n_warmup_steps=args.lr_scheduler.n_warmup_steps)
 
-    
     for epoch in range(args.start_epochs, args.ranker_epochs):
         
-        logger.info()
+        acc, loss = train_epoch(ranker,train_dataloader,criterion,optimizer,lr_scheduler,device,args,logger,tb_writer,epoch)
+        tb_writer.add_scalar('train/epoch_accuracy', acc, epoch)
+        tb_writer.add_scalar('train/epoch_loss', loss, epoch)
+        
+        
+        
 
 
 
