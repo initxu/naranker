@@ -84,26 +84,24 @@ def train_epoch(model, train_dataloader, criterion, optimizer, lr_scheduler,
         
         loss = criterion(output, target)
         writter.add_scalar('train/iter_loss', loss, total_iter)
-        
         loss.backward()
         
         lr_scheduler.update_lr()  # 由于初始lr是由lr_scheduler设定，因此更新学习率在前
-        writter.add_scalar('train/iter_lr', optimizer.param_groups[0]['lr'],
-                           total_iter)
+        writter.add_scalar('train/iter_lr', optimizer.param_groups[0]['lr'], total_iter)
         optimizer.step()
 
         classsify_tier_emb(total_embedding_list, tier_list, target)
 
         acc = compute_accuracy(output, target)
-        writter.add_scalar('train/batch_accuracy', acc, total_iter)
+        writter.add_scalar('train/iter_accuracy', acc, total_iter)
         
         b_sz = arch_feature.size(0)
         batch_time.update(time.time() - batch_start, n=1)
         batch_loss.update(loss, b_sz)
         batch_acc.update(acc, b_sz)
         
-        all_iter = (args.ranker_epochs - args.start_epochs)*len(train_dataloader) -1
-        logger.info('[Train][Epoch: {:2d}][Iter: {:4d}/{:4d}] Time: {:.2f} ({:.2f}) Acc: {:.4f} ({:.4f}) Loss: {:.6f} ({:.6f})'.format(
+        all_iter = (args.ranker_epochs - args.start_epochs)*len(train_dataloader) - 1
+        logger.info('[Train][Epoch:{:2d}][Iter: {:4d}/{:4d}] Time: {:.2f} ({:.2f}) Acc: {:.4f} ({:.4f}) Loss: {:.6f} ({:.6f})'.format(
             epoch,
             total_iter, all_iter, 
             batch_time.val, batch_time.avg, 

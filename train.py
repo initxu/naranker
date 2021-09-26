@@ -12,7 +12,7 @@ from utils.setup import setup_seed, setup_logger
 from utils.config import get_config
 from utils.loss_ops import CrossEntropyLossSoft
 from utils.optim import LRScheduler
-from utils.train_epoch import train_epoch
+from utils.train_progress import train_epoch
 
 
 def get_args():
@@ -137,7 +137,7 @@ def main():
 
     for epoch in range(args.start_epochs, args.ranker_epochs):
         
-        acc, loss = train_epoch(ranker,train_dataloader,criterion,optimizer,lr_scheduler,device,args,logger,tb_writer,epoch)
+        acc, loss = train_epoch(ranker,train_dataloader, criterion, optimizer, lr_scheduler, device,args, logger, tb_writer, epoch)
         tb_writer.add_scalar('train/epoch_accuracy', acc, epoch)
         tb_writer.add_scalar('train/epoch_loss', loss, epoch)
         
