@@ -25,8 +25,9 @@ class NASBenchDataset(Dataset):
         test_accuracy = arch['avg_test_accuracy']
         params = arch['trainable_parameters']
         flops = arch['flops']
+        n_nodes = len(arch['module_adjacency'])
         
-        return arch_feature, validation_accuracy, test_accuracy, params, flops
+        return arch_feature, validation_accuracy, test_accuracy, params, flops, n_nodes
 
     def __len__(self):
         return self.database.size

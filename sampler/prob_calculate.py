@@ -21,8 +21,8 @@ def compute_kl_div(input_seq, target_seq):
     return kl_value
 
 
-def compute_constraint_value(value, step):
-    return int(math.ceil(value/step) * step)            # ceil
+def compute_constraint_value(value, step, batch_min):
+    return math.ceil((value-batch_min)/step)*step+batch_min
 
 def convert_count_to_prob(counts_dict):
 
@@ -32,19 +32,33 @@ def convert_count_to_prob(counts_dict):
     
     return counts_dict
 
-def build_counts_dict(raw_list, batch_min, batch_max, bins=8):        
+def build_counts_dict(raw_list, batch_min, batch_max, bins=8, scail = 1):        
     # 输入的是raw_list是tier的list, 但是min和max是batch的最大最小值，因为对于一个batch预测出的多个tier，为了对比分布的差异，起始和终止点应该相同
-    
+    # scail对应flops太大了
+    batch_min = int(batch_min)
+    batch_max = int(batch_max)
     raw_list.sort()
-    step = int((batch_max-batch_min)/(bins-1))
+    step = math.ceil((batch_max-batch_min)/bins)
     
     counts_dict = {}
     for i in range(1, bins+1):  # 生成constraint bin 字典，存储每个小于constraint的子网的计数
-        counts_dict[i * step] = 0
+        counts_dict[int(scail*(i * step + batch_min))] = 0
     
     for value in raw_list:
-        value = compute_constraint_value(value, step)
-        counts_dict[value] += 1
+        if value == batch_min:
+            value+=step
+        value = compute_constraint_value(value, step, batch_min)
+        counts_dict[int(scail*value)] += 1
+
+    return counts_dict
+
+def build_n_nodes_counts_dict(raw_list, batch_min, batch_max):
+    raw_list.sort()
+    counts_dict = {}
+    for idx in range(batch_min, batch_max+1):
+        counts_dict[idx] = 0
+    for item in raw_list:
+        counts_dict[item] += 1
 
     return counts_dict
 
@@ -54,19 +68,19 @@ def extract_dict_value_to_list(target_dict, is_key=False):
         return list(target_dict.keys())
     return list(target_dict.values())
 
-def select_distri(candi_list, n_tier, threshold_kl_div, batch_size, batch_factor):
+def select_distri(candi_list, top_tier, threshold_kl_div, batch_size, batch_factor):
 # 先确定分布的样本数量是否足够多，再确定候选分布与差结构的分布的相似性
 # threahold_kl_div的应该随着batch增加越来越大，因为后期5个层级的分布可能趋同
 # 输入[{tier1},{tier2},{tier3},{tier4},{tier5}] list of counts_dict
 # 输出None or prob_dict
-    assert n_tier < len(candi_list), 'The candidates tier indexs should be smaller than the length of candidates list'
-    for i in range(n_tier):
+    assert top_tier < len(candi_list), 'The candidates tier indexs should be smaller than the length of candidates list'
+    for i in range(top_tier):
         candi = candi_list[i]                                   # 提取list存储的counts_dict作为candidates
         if sum(candi.values()) < batch_factor * batch_size:     # 若candi的计数小于batch的batch_factor时，这个分布不能用，继续遍历第二个
             continue
         
         candi_counts = extract_dict_value_to_list(candi)
-        for j in range(n_tier, len(candi_list)):
+        for j in range(top_tier, len(candi_list)):
             low_tier_counts = extract_dict_value_to_list(candi_list[j])
             if compute_kl_div(low_tier_counts, candi_counts) < threshold_kl_div:        # 送两个原始计数序列去计算
                 # 当差结构的分布与candi的分布相近时，表明candi分布不能代表优秀的结构

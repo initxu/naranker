@@ -24,12 +24,17 @@ class Bucket(object):
         self.current_bucket_emb = torch.zeros(
             n_arch_patch, d_patch_vec).unsqueeze(dim=0)         # [1,19,512]
 
+        self.counts_dict = {}
+
         self._emb_count = 0
 
         Bucket.n_tier += 1
 
     def get_bucket_emb(self):
         return copy.deepcopy(self.current_bucket_emb)
+
+    def get_bucket_counts(self):
+        return copy.deepcopy(self.counts_dict)
 
     def updata_bucket_emb(self, input_emb):     # input_emb[n, 19, 512]
         assert self._n_arch_patch == input_emb.size(1), "Wrong patch length"
@@ -47,7 +52,10 @@ class Bucket(object):
 
         assert self.current_bucket_emb.size(0) == 1, "The length of bucket emb dimension should be 1"
 
-        return self.current_bucket_emb
+    def update_counts_dict(self, params, flops, n_nodes):
+        self.counts_dict['params'] = params
+        self.counts_dict['flops'] = flops
+        self.counts_dict['n_nodes'] = n_nodes
 
     @property
     def emb_count(self):            # emb_count不允许外界改变, 仅能通过调用此getter获得数值，方法：instance_name.emb_count

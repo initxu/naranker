@@ -28,8 +28,8 @@ def sample_helper(disti_dict):
     return target_list, prob_list
 
 class ArchSampler(object):
-    def __init__(self, n_tier, threshold_kl_div, batch_size, batch_factor, node_type_dict, max_edges = 9, reuse_step=None):
-        self.n_tier = n_tier
+    def __init__(self, top_tier, threshold_kl_div, batch_size, batch_factor, node_type_dict, max_edges = 9, reuse_step=None):
+        self.top_tier = top_tier
         self.threshold_kl_div = threshold_kl_div
         self.batch_size = batch_size
         self.batch_factor = batch_factor
@@ -44,7 +44,7 @@ class ArchSampler(object):
 
     def _sample_target_value(self, candi_list, kl_div_factor=1):
         threshold_kl_div = self.threshold_kl_div * kl_div_factor
-        target_distri = select_distri(candi_list, self.n_tier, threshold_kl_div, self.batch_size, self.batch_factor)
+        target_distri = select_distri(candi_list, self.top_tier, threshold_kl_div, self.batch_size, self.batch_factor)
         
         if target_distri is not None:
             target_list, prob_list = sample_helper(target_distri)
@@ -177,7 +177,7 @@ if __name__ == '__main__':
     
     #  for test __sample_edges_and_types
     type_dict = {'input':1, 'conv1x1-bn-relu':2 , 'conv3x3-bn-relu':3, 'maxpool3x3':4, 'output':5}
-    sampler = ArchSampler(n_tier=1,threshold_kl_div=27,batch_size=423,batch_factor=1,reuse_step=10,node_type_dict=type_dict)
+    sampler = ArchSampler(top_tier=1,threshold_kl_div=27,batch_size=423,batch_factor=1,reuse_step=10,node_type_dict=type_dict)
     v = sampler._sample_edges_and_types(7,[7])
     print(v)
 

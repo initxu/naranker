@@ -7,11 +7,12 @@ from torch.utils.tensorboard import SummaryWriter
 
 from dataset import NASBenchDataBase, NASBenchDataset, SplitSubet
 from ranker import Transformer
+from sampler import ArchSampler
 from utils.setup import setup_seed, setup_logger
 from utils.config import get_config
 from utils.loss_ops import CrossEntropyLossSoft
 from utils.optim import LRScheduler
-from utils.train_progress import train_epoch, validate
+from process import train_epoch, validate
 
 
 def get_args():
@@ -134,18 +135,33 @@ def main():
         d_model=args.ranker.d_model,
         n_warmup_steps=args.lr_scheduler.n_warmup_steps)
 
+    sampler = ArchSampler(
+    top_tier=args.sampler.top_tier,
+    threshold_kl_div=args.sampler.threshold_kl_div,
+    batch_size=args.batch_size,
+    batch_factor=args.sampler.batch_factor,
+    node_type_dict=args.sampler.node_type_dict,
+    max_edges=args.sampler.max_edges,
+    reuse_step=args.sampler.reuse_step,
+    )
+
+    # train ranker
     for epoch in range(args.start_epochs, args.ranker_epochs):
         
-        acc, loss = train_epoch(ranker,train_dataloader, criterion, optimizer, lr_scheduler, device, args, logger, tb_writer, epoch)
-        tb_writer.add_scalar('train/epoch_accuracy', acc, epoch)
-        tb_writer.add_scalar('train/epoch_loss', loss, epoch)
+        train_acc, train_loss = train_epoch(ranker,train_dataloader, criterion, optimizer, lr_scheduler, device, args, logger, tb_writer, epoch)
+        tb_writer.add_scalar('train/epoch_accuracy', train_acc, epoch)
+        tb_writer.add_scalar('train/epoch_loss', train_loss, epoch)
 
         if epoch % args.validate_freq == 0:
             with torch.no_grad():
-                acc, loss = validate(ranker, val_dataloader, criterion, device, args, logger, epoch)
-                tb_writer.add_scalar('validate/epoch_accuracy', acc, epoch)
-                tb_writer.add_scalar('validate/epoch_loss', loss, epoch)
+                val_acc, val_loss = validate(ranker, val_dataloader, criterion, device, args, logger, epoch)
+                tb_writer.add_scalar('validate/epoch_accuracy', val_acc, epoch)
+                tb_writer.add_scalar('validate/epoch_loss', val_loss, epoch)
         
+    # assert args.sampler_epochs > args.ranker_epochs, 'sampler_epochs should be larger than ranker_epochs'
+    # for epoch in range(args.ranker_epochs, args.sampler_epochs):
+
+
         
         
 
