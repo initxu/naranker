@@ -187,6 +187,14 @@ def main():
         tb_writer.add_scalar('{}/epoch_accuracy'.format(flag), train_acc, epoch)
         tb_writer.add_scalar('{}/epoch_loss'.format(flag), train_loss, epoch)
 
+        if (epoch+1) % args.validate_freq == 0:
+            with torch.no_grad():
+                flag = 'Sampler Validate'
+                val_acc, val_loss = validate(ranker, val_dataloader, criterion, device, args, logger, epoch, flag)
+                tb_writer.add_scalar('{}/epoch_accuracy'.format(flag), val_acc, epoch)
+                tb_writer.add_scalar('{}/epoch_loss'.format(flag), val_loss, epoch)
+
+
 
 
         

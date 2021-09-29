@@ -1,21 +1,33 @@
 arch: "NAR"
 
-exp_name: "test"
+exp_name: "kldiv_test"
 
 seed: 20211117
 
 is_cuda: True
 
 space: "nasbench"
+node_type_dict: 
+    input: 1
+    conv1x1-bn-relu: 2
+    conv3x3-bn-relu: 3
+    maxpool3x3: 4
+    output: 5
+max_edges: 9
+
 train_size: 34362
+# train_size: 30
 val_size: 8000
+# val_size: 30
 drop_last: True
 data_loader_workers: 6
 
 batch_size: 256
 
 start_epochs: 0
-ranker_epochs: 24
+ranker_epochs: 30
+sampler_epochs: 50
+validate_freq: 5
 
 ranker:
   n_tier: 5
@@ -34,10 +46,24 @@ ranker:
   scale_prj: True
 
 optimizer:
-  betas: (0.9, 0.98)
-  eps: 1e-09
-  weight_decay: 5e-4
+  beta1: 0.9 
+  beta2: 0.982
+  eps: 1.0e-9
+  weight_decay: 1.0e-2 # AdamW默认是1e-2, 这是因为直接将L2正则加在了二阶动量上，可以尝试默认值, tranfomer复现代码是5.0e-4
 
 lr_scheduler:
-  lr_mul: 0.5
-  n_warmup_steps: 4000
+  lr_mul: 0.05
+  n_warmup_steps: 600
+
+sampler:
+  top_tier: 2
+  batch_factor: 0.2
+  reuse_step: 50
+  max_trails: 20
+  noisy_factor: 0.1
+  flops_kl_thred: 5
+  params_kl_thred: 8
+  n_nodes_kl_thred: 1
+
+
+bins: 8
