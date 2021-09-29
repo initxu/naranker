@@ -1,4 +1,3 @@
-import copy
 from torch.utils.data import Dataset
 
 from architecture import ModelSpec
