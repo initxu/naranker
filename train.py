@@ -1,5 +1,6 @@
 import os
 import time
+import random
 import argparse
 import torch.utils.data
 import torch.optim as optim
@@ -137,11 +138,10 @@ def main():
 
     sampler = ArchSampler(
     top_tier=args.sampler.top_tier,
-    threshold_kl_div=args.sampler.threshold_kl_div,
     batch_size=args.batch_size,
     batch_factor=args.sampler.batch_factor,
-    node_type_dict=args.sampler.node_type_dict,
-    max_edges=args.sampler.max_edges,
+    node_type_dict=dict(args.node_type_dict),
+    max_edges=args.max_edges,
     reuse_step=args.sampler.reuse_step,
     )
 
@@ -159,8 +159,34 @@ def main():
                 tb_writer.add_scalar('{}/epoch_accuracy'.format(flag), val_acc, epoch)
                 tb_writer.add_scalar('{}/epoch_loss'.format(flag), val_loss, epoch)
         
-    # assert args.sampler_epochs > args.ranker_epochs, 'sampler_epochs should be larger than ranker_epochs'
-    # for epoch in range(args.ranker_epochs, args.sampler_epochs):
+    # train ranker with sampler
+    assert args.sampler_epochs > args.ranker_epochs, 'sampler_epochs should be larger than ranker_epochs'
+    for epoch in range(args.ranker_epochs, args.sampler_epochs):
+        flag = 'Sampler Train'
+
+        sample_size = int(args.batch_size*(1-args.sampler.noisy_factor))
+        kl_thred = [args.sampler.flops_kl_thred, args.sampler.params_kl_thred, args.sampler.n_nodes_kl_thred]
+        sampled_arch, sampled_arch_datast_idx = sampler.sample_arch(batch_statics_dict, sample_size, trainset, kl_thred, args.sampler.max_trails)
+        sampled_arch_datast_idx = [v for _, v in enumerate(sampled_arch_datast_idx) if v != None]
+        
+        noisy_len = args.batch_size - len(sampled_arch_datast_idx)
+        noisy_samples = random.choices(list(range(args.train_size)), k=noisy_len)
+        sampled_arch_datast_idx += noisy_samples
+        random.shuffle(sampled_arch_datast_idx) # in_place
+
+        assert len(sampled_arch_datast_idx) == args.batch_size, 'Not enough sampled batch'
+
+        sampled_trainset = SplitSubet(dataset, sampled_arch_datast_idx)
+        sampled_train_dataloader = torch.utils.data.DataLoader(
+            sampled_trainset,
+            batch_size=args.batch_size,
+            num_workers=args.data_loader_workers,
+            pin_memory=True)
+        
+        train_acc, train_loss, batch_statics_dict = train_epoch(ranker, sampled_train_dataloader, criterion, optimizer, lr_scheduler, device, args, logger, tb_writer, epoch, flag)
+        tb_writer.add_scalar('{}/epoch_accuracy'.format(flag), train_acc, epoch)
+        tb_writer.add_scalar('{}/epoch_loss'.format(flag), train_loss, epoch)
+
 
 
         

@@ -28,9 +28,8 @@ def sample_helper(disti_dict):
     return target_list, prob_list
 
 class ArchSampler(object):
-    def __init__(self, top_tier, threshold_kl_div, batch_size, batch_factor, node_type_dict, max_edges = 9, reuse_step=None):
+    def __init__(self, top_tier, batch_size, batch_factor, node_type_dict, max_edges = 9, reuse_step=None):
         self.top_tier = top_tier
-        self.threshold_kl_div = threshold_kl_div
         self.batch_size = batch_size
         self.batch_factor = batch_factor
         self.reuse_step = reuse_step
@@ -42,8 +41,7 @@ class ArchSampler(object):
         self.batch_params_list = batch_statics_dict['params']
         self.batch_n_nodes_list = batch_statics_dict['n_nodes']
 
-    def _sample_target_value(self, candi_list, kl_div_factor=1):
-        threshold_kl_div = self.threshold_kl_div * kl_div_factor
+    def _sample_target_value(self, candi_list, threshold_kl_div=5):
         target_distri = select_distri(candi_list, self.top_tier, threshold_kl_div, self.batch_size, self.batch_factor)
         
         if target_distri is not None:
@@ -93,11 +91,11 @@ class ArchSampler(object):
         assert len(arch_struct_list) == self.max_edges * 2, 'Wrong length of sampled arch_struct_list'
         return arch_struct_list
 
-    def sample_arch(self, batch_statics_dict, n_subnets, dataset: SplitSubet, kl_factor_list=[1,1,1], max_trails=100):
+    def sample_arch(self, batch_statics_dict, n_subnets, dataset: SplitSubet, kl_thred=[5,8,1], max_trails=100):
         self.reset_parameters(batch_statics_dict)       # update batch statics with new batch
-        flops_kl_factor = kl_factor_list[0]
-        params_kl_factor = kl_factor_list[1]
-        n_nodes_kl_factor = kl_factor_list[2]
+        flops_kl_thred = kl_thred[0]
+        params_kl_thred = kl_thred[1]
+        n_nodes_kl_thred = kl_thred[2]
 
         sampled_arch = []
         sampled_arch_datast_idx = []
@@ -112,20 +110,17 @@ class ArchSampler(object):
             # step1 sample flops and params constraints
             if reuse_count % self.reuse_step == 0:
                 # sample target flops
-                batch_flops_list = self.batch_flops_list
-                flops = self._sample_target_value(batch_flops_list, flops_kl_factor)
+                flops = self._sample_target_value(self.batch_flops_list, flops_kl_thred)
 
                 # sample target params
-                batch_params_list = self.batch_params_list
-                params = self._sample_target_value(batch_params_list, params_kl_factor)
+                params = self._sample_target_value(self.batch_params_list, params_kl_thred)
 
             for trail in range(max_trails+1):
                 arch_struct_list = []   # store arch
                 
                 # step2 sample target n_nodes
                 # n_nodes_list一个cell总的节点数, 也即是包括input和output节点的
-                batch_n_nodes_list = self.batch_n_nodes_list
-                n_nodes = self._sample_target_value(batch_n_nodes_list,n_nodes_kl_factor)
+                n_nodes = self._sample_target_value(self.batch_n_nodes_list, n_nodes_kl_thred)
                 arch_struct_list.append(n_nodes)
                 
                 # step3 sample nodes type and connectoin
