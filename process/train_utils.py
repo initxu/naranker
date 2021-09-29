@@ -1,7 +1,7 @@
 import torch
 
 from architecture import Bucket
-from sampler.prob_calculate import build_counts_dict, build_n_nodes_counts_dict
+from sampler.prob_calculate import build_counts_dict, build_n_nodes_counts_dict, compute_kl_div, extract_dict_value_to_list
 
 def get_target(score, n_tier, batch_sz):
     _, idx = score.sort(descending=True)
@@ -86,4 +86,15 @@ def get_batch_statics(tier_list):
         p_list.append(tier_counts['params'])
         f_list.append(tier_counts['flops'])
         n_list.append(tier_counts['n_nodes'])
-    return {'flops':f_list,'params':p_list,'n_nodes':n_list}
+    return {'params':p_list, 'flops':f_list, 'n_nodes':n_list}
+
+def compare_kl_div(batch_statics:list):
+    t1 = batch_statics[0]
+    t1 = extract_dict_value_to_list(t1)
+    kl_dict = {}
+    for i in range(1, len(batch_statics)):
+        t = extract_dict_value_to_list(batch_statics[i])
+        kl_v = compute_kl_div(t, t1)
+        kl_dict['t{}||t1'.format(i+1)] = kl_v
+
+    return kl_dict

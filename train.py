@@ -8,11 +8,11 @@ from torch.utils.tensorboard import SummaryWriter
 from dataset import NASBenchDataBase, NASBenchDataset, SplitSubet
 from ranker import Transformer
 from sampler import ArchSampler
+from process import train_epoch, validate
 from utils.setup import setup_seed, setup_logger
 from utils.config import get_config
 from utils.loss_ops import CrossEntropyLossSoft
 from utils.optim import LRScheduler
-from process import train_epoch, validate
 
 
 def get_args():
@@ -147,16 +147,17 @@ def main():
 
     # train ranker
     for epoch in range(args.start_epochs, args.ranker_epochs):
-        
-        train_acc, train_loss = train_epoch(ranker,train_dataloader, criterion, optimizer, lr_scheduler, device, args, logger, tb_writer, epoch)
-        tb_writer.add_scalar('train/epoch_accuracy', train_acc, epoch)
-        tb_writer.add_scalar('train/epoch_loss', train_loss, epoch)
+        flag = 'Ranker Train'
+        train_acc, train_loss, batch_statics_dict = train_epoch(ranker,train_dataloader, criterion, optimizer, lr_scheduler, device, args, logger, tb_writer, epoch, flag)
+        tb_writer.add_scalar('{}/epoch_accuracy'.format(flag), train_acc, epoch)
+        tb_writer.add_scalar('{}/epoch_loss'.format(flag), train_loss, epoch)
 
-        if epoch % args.validate_freq == 0:
+        if (epoch+1) % args.validate_freq == 0:
             with torch.no_grad():
-                val_acc, val_loss = validate(ranker, val_dataloader, criterion, device, args, logger, epoch)
-                tb_writer.add_scalar('validate/epoch_accuracy', val_acc, epoch)
-                tb_writer.add_scalar('validate/epoch_loss', val_loss, epoch)
+                flag = 'Ranker Validate'
+                val_acc, val_loss = validate(ranker, val_dataloader, criterion, device, args, logger, epoch, flag)
+                tb_writer.add_scalar('{}/epoch_accuracy'.format(flag), val_acc, epoch)
+                tb_writer.add_scalar('{}/epoch_loss'.format(flag), val_loss, epoch)
         
     # assert args.sampler_epochs > args.ranker_epochs, 'sampler_epochs should be larger than ranker_epochs'
     # for epoch in range(args.ranker_epochs, args.sampler_epochs):

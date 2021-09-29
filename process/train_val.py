@@ -1,5 +1,6 @@
 import torch
 import time
+import copy
 
 from architecture import Bucket
 from utils.metric import AverageMeter, compute_accuracy
@@ -7,7 +8,7 @@ from utils.metric import AverageMeter, compute_accuracy
 from .train_utils import *
 
 def train_epoch(model, train_dataloader, criterion, optimizer, lr_scheduler,
-                device, args, logger, writter, epoch):
+                device, args, logger, writter, epoch, flag):
 
     epoch_start = time.time()
 
@@ -46,38 +47,42 @@ def train_epoch(model, train_dataloader, criterion, optimizer, lr_scheduler,
         output, total_embedding_list = model(arch_feature, tier_feature)  # arch shape [256,19,7,7], tier_feature [5,19,512],后者detach
         
         loss = criterion(output, target)
-        writter.add_scalar('train/iter_loss', loss, total_iter)
+        writter.add_scalar('{}/iter_loss'.format(flag), loss, total_iter)
         loss.backward()
         
         lr_scheduler.update_lr()  # 由于初始lr是由lr_scheduler设定，因此更新学习率在前
-        writter.add_scalar('train/iter_lr', optimizer.param_groups[0]['lr'], total_iter)
+        writter.add_scalar('{}/iter_lr'.format(flag), optimizer.param_groups[0]['lr'], total_iter)
         optimizer.step()
 
         classify_tier_emb_by_target(total_embedding_list, tier_list, target)
         classify_tier_counts_by_target(params, flops, n_nodes, tier_list, target, args.bins)
-        # batch_statics_dict = get_batch_statics(tier_list)
+        batch_statics_dict = get_batch_statics(tier_list)
+        
+        for k in batch_statics_dict:
+            candi_dic = compare_kl_div(copy.deepcopy(batch_statics_dict[k]))
+            writter.add_scalars('{}/{}_div'.format(flag, k), candi_dic, total_iter)
 
         acc = compute_accuracy(output, target)
-        writter.add_scalar('train/iter_accuracy', acc, total_iter)
+        writter.add_scalar('{}/iter_accuracy'.format(flag), acc, total_iter)
         
         b_sz = arch_feature.size(0)
         batch_time.update(time.time() - batch_start, n=1)
         batch_loss.update(loss, b_sz)
         batch_acc.update(acc, b_sz)
         
-        logger.info('[Train][Epoch:{:2d}][Iter: {:5d}/{:5d}] Time: {:.2f} ({:.2f}) Acc: {:.4f} ({:.4f}) Loss: {:.6f} ({:.6f})'.format(
-            epoch,
+        logger.info('[{}][Epoch:{:2d}][Iter: {:5d}/{:5d}] Time: {:.2f} ({:.2f}) Acc: {:.4f} ({:.4f}) Loss: {:.6f} ({:.6f})'.format(
+            flag, epoch,
             total_iter, all_iter, 
             batch_time.val, batch_time.avg, 
             batch_acc.val, batch_acc.avg, 
             batch_loss.val, batch_loss.avg))
 
     epoch_time = time.time() - epoch_start
-    logger.info('[Train][Epoch:{:2d}] Time: {:.2f} Epoch Acc: {:.4f} Epoch Loss: {:.6f}'.format(epoch, epoch_time, batch_acc.avg, batch_loss.avg))
+    logger.info('[{}][Epoch:{:2d}] Time: {:.2f} Epoch Acc: {:.4f} Epoch Loss: {:.6f}'.format(flag, epoch, epoch_time, batch_acc.avg, batch_loss.avg))
     
-    return batch_acc.avg, batch_loss.avg
+    return batch_acc.avg, batch_loss.avg, batch_statics_dict
 
-def validate(model, val_dataloader, criterion, device, args, logger, epoch):
+def validate(model, val_dataloader, criterion, device, args, logger, epoch, flag):
     epoch_start = time.time()
     
     batch_loss = AverageMeter()
@@ -115,6 +120,6 @@ def validate(model, val_dataloader, criterion, device, args, logger, epoch):
         batch_acc.update(acc, b_sz)
         
     epoch_time = time.time() - epoch_start
-    logger.info('[Validate][Epoch:{:2d}] Time: {:.2f} Epoch Acc: {:.4f} Epoch Loss: {:.6f}'.format(epoch, epoch_time, batch_acc.avg, batch_loss.avg))
+    logger.info('[{}][Epoch:{:2d}] Time: {:.2f} Epoch Acc: {:.4f} Epoch Loss: {:.6f}'.format(flag, epoch, epoch_time, batch_acc.avg, batch_loss.avg))
         
     return batch_acc.avg, batch_loss.avg
