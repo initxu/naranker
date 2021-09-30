@@ -9,7 +9,7 @@ from torch.utils.tensorboard import SummaryWriter
 from dataset import NASBenchDataBase, NASBenchDataset, SplitSubet
 from ranker import Transformer
 from sampler import ArchSampler
-from process import train_epoch, validate
+from process import train_epoch, validate, sampler_train_iter, sampler_validate
 from utils.setup import setup_seed, setup_logger
 from utils.config import get_config
 from utils.loss_ops import CrossEntropyLossSoft
@@ -138,7 +138,7 @@ def main():
 
     sampler = ArchSampler(
     top_tier=args.sampler.top_tier,
-    batch_size=args.batch_size,
+    last_tier= args.sampler.last_tier,
     batch_factor=args.sampler.batch_factor,
     node_type_dict=dict(args.node_type_dict),
     max_edges=args.max_edges,
@@ -148,7 +148,7 @@ def main():
     # train ranker
     for epoch in range(args.start_epochs, args.ranker_epochs):
         flag = 'Ranker Train'
-        train_acc, train_loss, batch_statics_dict = train_epoch(ranker,train_dataloader, criterion, optimizer, lr_scheduler, device, args, logger, tb_writer, epoch, flag)
+        train_acc, train_loss, batch_statics_dict = train_epoch(ranker, train_dataloader, criterion, optimizer, lr_scheduler, device, args, logger, tb_writer, epoch, flag)
         tb_writer.add_scalar('{}/epoch_accuracy'.format(flag), train_acc, epoch)
         tb_writer.add_scalar('{}/epoch_loss'.format(flag), train_loss, epoch)
 
@@ -164,37 +164,43 @@ def main():
     for epoch in range(args.ranker_epochs, args.sampler_epochs):
         flag = 'Sampler Train'
 
-        sample_size = int(args.batch_size*(1-args.sampler.noisy_factor))
+        sample_size = int(args.sampler.sample_size * (1-args.sampler.noisy_factor))
         kl_thred = [args.sampler.flops_kl_thred, args.sampler.params_kl_thred, args.sampler.n_nodes_kl_thred]
+        
+        # sample from trainset
         sampled_arch, sampled_arch_datast_idx = sampler.sample_arch(batch_statics_dict, sample_size, trainset, kl_thred, args.sampler.max_trails)
         sampled_arch_datast_idx = [v for _, v in enumerate(sampled_arch_datast_idx) if v != None]
+        tb_writer.add_scalar('{}/number_sampled_archs'.format(flag), len(sampled_arch_datast_idx), epoch)
         
-        noisy_len = args.batch_size - len(sampled_arch_datast_idx)
+        # add noisy
+        noisy_len = args.sampler.sample_size - len(sampled_arch_datast_idx)
         noisy_samples = random.choices(list(range(args.train_size)), k=noisy_len)
         sampled_arch_datast_idx += noisy_samples
+        
         random.shuffle(sampled_arch_datast_idx) # in_place
-
-        assert len(sampled_arch_datast_idx) == args.batch_size, 'Not enough sampled batch'
+        assert len(sampled_arch_datast_idx) == args.sampler.sample_size, 'Not enough sampled batch'
 
         sampled_trainset = SplitSubet(dataset, sampled_arch_datast_idx)
         sampled_train_dataloader = torch.utils.data.DataLoader(
             sampled_trainset,
-            batch_size=args.batch_size,
+            batch_size=args.sampler.sample_size,
+            num_workers=args.data_loader_workers,
+            pin_memory=True)
+
+        val_dataloader = torch.utils.data.DataLoader(
+            valset,
+            batch_size=args.sampler.sample_size,
+            shuffle=False,
+            drop_last=True,
             num_workers=args.data_loader_workers,
             pin_memory=True)
         
-        train_acc, train_loss, batch_statics_dict = train_epoch(ranker, sampled_train_dataloader, criterion, optimizer, lr_scheduler, device, args, logger, tb_writer, epoch, flag)
-        tb_writer.add_scalar('{}/epoch_accuracy'.format(flag), train_acc, epoch)
-        tb_writer.add_scalar('{}/epoch_loss'.format(flag), train_loss, epoch)
+        train_acc, train_loss, batch_statics_dict = sampler_train_iter(ranker, sampled_train_dataloader, criterion, optimizer, lr_scheduler, device, args, logger, tb_writer, epoch, flag)
 
         if (epoch+1) % args.validate_freq == 0:
             with torch.no_grad():
                 flag = 'Sampler Validate'
-                val_acc, val_loss = validate(ranker, val_dataloader, criterion, device, args, logger, epoch, flag)
-                tb_writer.add_scalar('{}/epoch_accuracy'.format(flag), val_acc, epoch)
-                tb_writer.add_scalar('{}/epoch_loss'.format(flag), val_loss, epoch)
-
-
+                val_acc, val_loss = sampler_validate(ranker, val_dataloader, criterion, device, args, logger, epoch, flag)
 
 
         

@@ -68,7 +68,7 @@ def extract_dict_value_to_list(target_dict, is_key=False):
         return list(target_dict.keys())
     return list(target_dict.values())
 
-def select_distri(candi_list, top_tier, threshold_kl_div, batch_size, batch_factor):
+def select_distri(candi_list, top_tier, last_tier, threshold_kl_div, batch_size, batch_factor):
 # 先确定分布的样本数量是否足够多，再确定候选分布与差结构的分布的相似性
 # threahold_kl_div的应该随着batch增加越来越大，因为后期5个层级的分布可能趋同
 # 输入[{tier1},{tier2},{tier3},{tier4},{tier5}] list of counts_dict
@@ -80,7 +80,8 @@ def select_distri(candi_list, top_tier, threshold_kl_div, batch_size, batch_fact
             continue
         
         candi_counts = extract_dict_value_to_list(candi)
-        for j in range(top_tier, len(candi_list)):
+        assert last_tier > top_tier, 'last tier index should be larger than top tier'
+        for j in range(last_tier-1, len(candi_list)):
             low_tier_counts = extract_dict_value_to_list(candi_list[j])
             if compute_kl_div(low_tier_counts, candi_counts) < threshold_kl_div:        # 送两个原始计数序列去计算
                 # 当差结构的分布与candi的分布相近时，表明candi分布不能代表优秀的结构
