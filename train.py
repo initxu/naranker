@@ -188,6 +188,8 @@ def main():
             pin_memory=True)
         
         train_acc, train_loss, batch_statics_dict = sampler_train_epoch(ranker, sampled_train_dataloader, criterion, optimizer, lr_scheduler, device, args, logger, tb_writer, epoch, flag)
+        tb_writer.add_scalar('{}/epoch_accuracy'.format(flag), train_acc, epoch)
+        tb_writer.add_scalar('{}/epoch_loss'.format(flag), train_loss, epoch)
 
         if (epoch+1) % args.validate_freq == 0:
             with torch.no_grad():

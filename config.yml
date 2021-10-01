@@ -8,17 +8,17 @@ is_cuda: True
 
 space: "nasbench"
 node_type_dict: 
-    input: 1
-    conv1x1-bn-relu: 2
-    conv3x3-bn-relu: 3
-    maxpool3x3: 4
-    output: 5
+  input: 1
+  conv1x1-bn-relu: 2
+  conv3x3-bn-relu: 3
+  maxpool3x3: 4
+  output: 5
 max_edges: 9
 
-train_size: 34362
-# train_size: 30
-val_size: 8000
-# val_size: 30
+# train_size: 34362
+train_size: 3436
+# val_size: 8000
+val_size: 800
 drop_last: True
 data_loader_workers: 6
 
@@ -26,7 +26,7 @@ batch_size: 256
 
 start_epochs: 0
 ranker_epochs: 30
-sampler_epochs: 50
+sampler_epochs: 200
 validate_freq: 5
 
 ranker:
@@ -56,14 +56,17 @@ lr_scheduler:
   n_warmup_steps: 600
 
 sampler:
-  top_tier: 2
-  batch_factor: 0.2
+  top_tier: 1
+  last_tier: 4 # 其实是从计数3到4，即最后两个tier
+  batch_factor: 0.1
   reuse_step: 50
-  max_trails: 20
+  max_trails: 100
   noisy_factor: 0.1
-  flops_kl_thred: 5
-  params_kl_thred: 8
+  flops_kl_thred: 2.5
+  params_kl_thred: 2
   n_nodes_kl_thred: 1
+  sample_size: 100
+  batch_size: 20
 
 
 bins: 8
