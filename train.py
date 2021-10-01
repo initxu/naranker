@@ -7,9 +7,11 @@ import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
 
 from dataset import NASBenchDataBase, NASBenchDataset, SplitSubet
+from architecture import Bucket
 from ranker import Transformer
 from sampler import ArchSampler
-from process import train_epoch, validate, sampler_train_epoch
+from process import train_epoch, validate, evaluate
+from process.train_utils import init_tier_list
 from utils.setup import setup_seed, setup_logger
 from utils.config import get_config
 from utils.loss_ops import CrossEntropyLossSoft
@@ -161,43 +163,17 @@ def main():
         
     # sample
     assert args.sampler_epochs > args.ranker_epochs, 'sampler_epochs should be larger than ranker_epochs'
+
+    assert Bucket.get_n_tier()==0, 'Bucket counts should be reset to 0'
+    tier_list = init_tier_list(args)
+
+    entire_set = SplitSubet(dataset, list(range(len(dataset))))
+    
     for epoch in range(args.ranker_epochs, args.sampler_epochs):
-        flag = 'Sampler Train'
-
-        sample_size = int(args.sampler.sample_size * (1-args.sampler.noisy_factor))
-        kl_thred = [args.sampler.flops_kl_thred, args.sampler.params_kl_thred, args.sampler.n_nodes_kl_thred]
+        flag = 'Sample'
         
-        # sample from trainset
-        sampled_arch, sampled_arch_datast_idx = sampler.sample_arch(batch_statics_dict, sample_size, trainset, kl_thred, args.sampler.max_trails)
-        sampled_arch_datast_idx = [v for _, v in enumerate(sampled_arch_datast_idx) if v != None]
-        tb_writer.add_scalar('{}/number_sampled_archs'.format(flag), len(sampled_arch_datast_idx), epoch)
+        evaluate(ranker, sampler, tier_list, batch_statics_dict, dataset, entire_set, epoch, args, tb_writer, device, flag)   
         
-        # add noisy
-        noisy_len = args.sampler.sample_size - len(sampled_arch_datast_idx)
-        noisy_samples = random.choices(list(range(args.train_size)), k=noisy_len)
-        sampled_arch_datast_idx += noisy_samples
-        
-        random.shuffle(sampled_arch_datast_idx) # in_place
-        assert len(sampled_arch_datast_idx) == args.sampler.sample_size, 'Not enough sampled dataset'
-
-        sampled_trainset = SplitSubet(dataset, sampled_arch_datast_idx)
-        sampled_train_dataloader = torch.utils.data.DataLoader(
-            sampled_trainset,
-            batch_size=args.sampler.batch_size,     # train on sampled dataset, but the sampler batchsize
-            num_workers=args.data_loader_workers,
-            pin_memory=True)
-        
-        train_acc, train_loss, batch_statics_dict = sampler_train_epoch(ranker, sampled_train_dataloader, criterion, optimizer, lr_scheduler, device, args, logger, tb_writer, epoch, flag)
-        tb_writer.add_scalar('{}/epoch_accuracy'.format(flag), train_acc, epoch)
-        tb_writer.add_scalar('{}/epoch_loss'.format(flag), train_loss, epoch)
-
-        if (epoch+1) % args.validate_freq == 0:
-            with torch.no_grad():
-                flag = 'Sampler Validate'
-                val_acc, val_loss = validate(ranker, val_dataloader, criterion, device, args, logger, epoch, flag)
-                tb_writer.add_scalar('{}/epoch_accuracy'.format(flag), val_acc, epoch)
-                tb_writer.add_scalar('{}/epoch_loss'.format(flag), val_loss, epoch)
-
 
         
         

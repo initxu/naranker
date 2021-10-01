@@ -1,7 +1,6 @@
 import torch
 
 def compute_accuracy(output, target):
-    import pdb;pdb.set_trace()
     batch_sz = target.size(0)   # both target and output are b_sz * n_class
     _, pred = output.topk(k=1,dim=1)
     _, label = target.topk(k=1,dim=1)

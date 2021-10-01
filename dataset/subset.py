@@ -16,6 +16,7 @@ class SplitSubet(Dataset):
     def __len__(self):
         return len(self.indices)
 
+    # Query subnet inside the sub dataset
     def query_stats_by_spec(self, model_spec: ModelSpec):
         # step1: 找到spec对应的hash
         arch_dict = self.full_dataset.database.check_arch_inside_dataset(model_spec)
