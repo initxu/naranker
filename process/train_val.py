@@ -34,7 +34,12 @@ def train_epoch(model, train_dataloader, criterion, optimizer, lr_scheduler,
         flops = flops.float().cuda(device)
         n_nodes = n_nodes.float().cuda(device)
 
-        score = val_acc / (params * flops + 1e-9)  # 假设shape = [batch]
+        assert args.strategy in ['multi_obj', 'val_acc'], 'Wrong strategy'
+        if args.strategy == 'multi_obj':
+            score = val_acc / (params * flops + 1e-9)  # shape = [batchsize]
+        if args.strategy == 'val_acc':
+            score  = val_acc
+
         target = get_target(score, args.ranker.n_tier, args.batch_size)
         target = target.cuda(device)
 
@@ -104,7 +109,12 @@ def validate(model, val_dataloader, criterion, device, args, logger, epoch, flag
         flops = flops.float().cuda(device)
         n_nodes = n_nodes.float().cuda(device)
 
-        score = val_acc / (params * flops + 1e-9)  # 假设shape = [batch]
+        assert args.strategy in ['multi_obj', 'val_acc'], 'Wrong strategy'
+        if args.strategy == 'multi_obj':
+            score = val_acc / (params * flops + 1e-9)  # 假设shape = [batch]
+        if args.strategy == 'val_acc':
+            score  = val_acc
+
         target = get_target(score, args.ranker.n_tier, args.batch_size)
         target = target.cuda(device)
 

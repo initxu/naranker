@@ -25,9 +25,11 @@ data_loader_workers: 6
 batch_size: 256
 
 start_epochs: 0
-ranker_epochs: 1
+ranker_epochs: 30
 sampler_epochs: 200
 validate_freq: 5
+
+strategy: "val_acc"
 
 ranker:
   n_tier: 5
@@ -36,7 +38,7 @@ ranker:
   d_patch_vec: 512
   d_model: 512
   d_ffn_inner: 2048
-  d_tier_prj_inner: 4096
+  d_tier_prj_inner: 1024
   n_layers: 6
   n_head: 8
   d_k: 64
@@ -53,7 +55,7 @@ optimizer:
 
 lr_scheduler:
   lr_mul: 0.05
-  n_warmup_steps: 600
+  n_warmup_steps: 100
 
 sampler:
   top_tier: 1
@@ -61,12 +63,12 @@ sampler:
   batch_factor: 0.1
   reuse_step: 50
   max_trails: 100
-  noisy_factor: 0.1
+  noisy_factor: 0
   flops_kl_thred: 2.5
   params_kl_thred: 2
   n_nodes_kl_thred: 1
-  sample_size: 100
-  search_size: 20
+  sample_size: 128
+  search_size: 128
 
 
 bins: 8

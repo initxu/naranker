@@ -87,7 +87,9 @@ def sampler_train_epoch(model, train_dataloader, criterion, optimizer, lr_schedu
     return batch_acc.avg, batch_loss.avg, batch_statics_dict
 
 
-def evaluate(model, sampler, tier_list, batch_statics_dict, dataset : NASBenchDataset, epoch, args, writer, device, flag):
+def evaluate(model, sampler, tier_list, batch_statics_dict, dataset : NASBenchDataset, epoch, args, device, writer, logger, flag):
+
+    sample_start = time.time()
 
     sample_size = int(args.sampler.sample_size * (1 - args.sampler.noisy_factor))
     kl_thred = [
@@ -118,9 +120,9 @@ def evaluate(model, sampler, tier_list, batch_statics_dict, dataset : NASBenchDa
 
     model.eval()
 
+    results = []
     for it, batch in enumerate(sampled_dataloader):
-        batch_start = time.time()
-
+        
         arch_feature, val_acc, test_acc, params, flops, n_nodes, rank = batch
         arch_feature = arch_feature.float().cuda(device)
         params = params.float().cuda(device)
@@ -139,12 +141,29 @@ def evaluate(model, sampler, tier_list, batch_statics_dict, dataset : NASBenchDa
         _, index = torch.topk(output, k=1, dim=1)
         index = index.squeeze(dim=1)
         idx = torch.where(index == 0)   # tier 1 对应的下标
-        import pdb;pdb.set_trace()
-        best_acc=max(test_acc[idx].tolist())
-        best_rank = min(rank[idx].tolist())
+        best_acc_it=max(test_acc[idx].tolist())
+        best_rank_it = min(rank[idx].tolist())
+        results.append((best_acc_it, best_rank_it))
         
-        print(best_acc, best_rank, best_rank/len(dataset) *100)
+    results = sorted(results, key=lambda item:item[0], reverse=True)
 
+    (best_acc, best_rank) = results[0]
+    best_rank_percentage = best_rank/len(dataset)
+
+    sample_time = time.time() - sample_start
+    logger.info('[{}][iter:{:2d}] Time: {:.2f} Best Test Acc: {:.8f} Best Rank: {:4d}(top {:.2%})'.format(
+            flag, epoch-args.ranker_epochs,
+            sample_time,
+            best_acc,  
+            best_rank,
+            best_rank_percentage))
+
+    batch_statics_dict = get_batch_statics(tier_list)
+
+    return batch_statics_dict, (best_acc, best_rank)
+
+
+    
 
 
 

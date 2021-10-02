@@ -1,6 +1,5 @@
 import os
 import time
-import random
 import argparse
 import torch.utils.data
 import torch.optim as optim
@@ -16,6 +15,7 @@ from utils.setup import setup_seed, setup_logger
 from utils.config import get_config
 from utils.loss_ops import CrossEntropyLossSoft
 from utils.optim import LRScheduler
+from utils.metric import AverageMeter
 
 
 def get_args():
@@ -166,11 +166,38 @@ def main():
     assert Bucket.get_n_tier()==0, 'Bucket counts should be reset to 0'
     tier_list = init_tier_list(args)
     
+    history_best_acc = 0
+    history_best_arch_iter = 0
+    history_best_rank=0
+    sampled_arch_acc = AverageMeter()
     for epoch in range(args.ranker_epochs, args.sampler_epochs):
         flag = 'Sample'
         
         with torch.no_grad():
-            evaluate(ranker, sampler, tier_list, batch_statics_dict, dataset, epoch, args, tb_writer, device, flag)   
+            batch_statics_dict, (acc, rank) = evaluate(ranker, sampler, tier_list, batch_statics_dict, dataset, epoch, args, device, tb_writer, logger, flag)
+            sampled_arch_acc.update(acc, n=1)
+            
+            if acc > history_best_acc:
+                history_best_arch_iter = epoch - args.ranker_epochs
+                history_best_acc = acc
+                history_best_rank = rank
+                logger.info('Found History Best Arch in Iter {:2d}: Test Acc {:.8f} Rank: {:4d}(top {:.2%})'.format(
+                    history_best_arch_iter,
+                    history_best_acc,  
+                    history_best_rank,
+                    history_best_rank/len(dataset)))
+            
+    logger.info('Derive History Best Arch in Iter {:2d}: Test Acc {:.8f} Rank: {:4d}(top {:.2%}), Avg Test Acc {:.8f}'.format(
+        history_best_arch_iter,
+        history_best_acc,  
+        history_best_rank,
+        history_best_rank/len(dataset),
+        sampled_arch_acc.avg))
+
+
+
+
+
         
 
         
