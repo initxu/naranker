@@ -2,7 +2,7 @@ import torch
 import copy
 from torch.utils.data import Dataset
 
-from architecture import feature_tensor_encoding
+from architecture import ModelSpec, feature_tensor_encoding
 
 from .nasbench_database import NASBenchDataBase
 
@@ -28,6 +28,18 @@ class NASBenchDataset(Dataset):
         n_nodes = len(arch['module_adjacency'])
         
         return arch_feature, validation_accuracy, test_accuracy, params, flops, n_nodes
+
+    # Query subnet in the entire set
+    def query_stats_by_spec(self, model_spec: ModelSpec):
+        arch_dict = self.database.check_arch_inside_dataset(model_spec)
+        if arch_dict is None:
+            return None, None, None
+
+        model_hash = arch_dict['unique_hash']
+        hash_list_idx = self.keys_list.index(model_hash)
+        index_list_idx = self.index_list.index(hash_list_idx)
+
+        return arch_dict['flops'], arch_dict['trainable_parameters'], index_list_idx
 
     def __len__(self):
         return self.database.size

@@ -163,16 +163,13 @@ def main():
         
     # sample
     assert args.sampler_epochs > args.ranker_epochs, 'sampler_epochs should be larger than ranker_epochs'
-
     assert Bucket.get_n_tier()==0, 'Bucket counts should be reset to 0'
     tier_list = init_tier_list(args)
-
-    entire_set = SplitSubet(dataset, list(range(len(dataset))))
     
     for epoch in range(args.ranker_epochs, args.sampler_epochs):
         flag = 'Sample'
         
-        evaluate(ranker, sampler, tier_list, batch_statics_dict, dataset, entire_set, epoch, args, tb_writer, device, flag)   
+        evaluate(ranker, sampler, tier_list, batch_statics_dict, dataset, epoch, args, tb_writer, device, flag)   
         
 
         

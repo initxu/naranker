@@ -87,7 +87,7 @@ def sampler_train_epoch(model, train_dataloader, criterion, optimizer, lr_schedu
     return batch_acc.avg, batch_loss.avg, batch_statics_dict
 
 
-def evaluate(model, sampler, tier_list, batch_statics_dict, dataset : NASBenchDataset, entire_set: SplitSubet, epoch, args, writer, device, flag):
+def evaluate(model, sampler, tier_list, batch_statics_dict, dataset : NASBenchDataset, epoch, args, writer, device, flag):
 
     sample_size = int(args.sampler.sample_size * (1 - args.sampler.noisy_factor))
     kl_thred = [
@@ -97,7 +97,7 @@ def evaluate(model, sampler, tier_list, batch_statics_dict, dataset : NASBenchDa
     ]
     import pdb;pdb.set_trace()
     # sample from entire dataset
-    sampled_arch, sampled_arch_datast_idx = sampler.sample_arch(batch_statics_dict, sample_size, entire_set, kl_thred, args.sampler.max_trails)
+    sampled_arch, sampled_arch_datast_idx = sampler.sample_arch(batch_statics_dict, sample_size, dataset, kl_thred, args.sampler.max_trails)
     sampled_arch_datast_idx = [v for _, v in enumerate(sampled_arch_datast_idx) if v != None]
     writer.add_scalar('{}/number_sampled_archs'.format(flag), len(sampled_arch_datast_idx), epoch)
 

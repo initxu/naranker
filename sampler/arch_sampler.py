@@ -18,7 +18,7 @@ input: 1 batch_statics_dict =
 import random
 
 from architecture import ModelSpec, seq_decode_to_arch
-from dataset import SplitSubet
+from dataset import NASBenchDataset
 
 from .prob_calculate import select_distri, extract_dict_value_to_list
 
@@ -94,7 +94,7 @@ class ArchSampler(object):
         assert len(arch_struct_list) == self.max_edges * 2, 'Wrong length of sampled arch_struct_list'
         return arch_struct_list
 
-    def sample_arch(self, batch_statics_dict, n_subnets, dataset: SplitSubet, kl_thred=[5,8,1], max_trails=100):
+    def sample_arch(self, batch_statics_dict, n_subnets, dataset: NASBenchDataset, kl_thred=[5,8,1], max_trails=100):
         self.reset_parameters(batch_statics_dict)       # update batch statics with new batch
         flops_kl_thred = kl_thred[0]
         params_kl_thred = kl_thred[1]
