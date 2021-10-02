@@ -26,8 +26,9 @@ class NASBenchDataset(Dataset):
         params = arch['trainable_parameters']
         flops = arch['flops']
         n_nodes = len(arch['module_adjacency'])
+        rank = arch['rank']
         
-        return arch_feature, validation_accuracy, test_accuracy, params, flops, n_nodes
+        return arch_feature, validation_accuracy, test_accuracy, params, flops, n_nodes, rank
 
     # Query subnet in the entire set
     def query_stats_by_spec(self, model_spec: ModelSpec):

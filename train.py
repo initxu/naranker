@@ -169,7 +169,8 @@ def main():
     for epoch in range(args.ranker_epochs, args.sampler_epochs):
         flag = 'Sample'
         
-        evaluate(ranker, sampler, tier_list, batch_statics_dict, dataset, epoch, args, tb_writer, device, flag)   
+        with torch.no_grad():
+            evaluate(ranker, sampler, tier_list, batch_statics_dict, dataset, epoch, args, tb_writer, device, flag)   
         
 
         

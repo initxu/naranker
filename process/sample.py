@@ -95,7 +95,7 @@ def evaluate(model, sampler, tier_list, batch_statics_dict, dataset : NASBenchDa
         args.sampler.params_kl_thred,
         args.sampler.n_nodes_kl_thred
     ]
-    import pdb;pdb.set_trace()
+
     # sample from entire dataset
     sampled_arch, sampled_arch_datast_idx = sampler.sample_arch(batch_statics_dict, sample_size, dataset, kl_thred, args.sampler.max_trails)
     sampled_arch_datast_idx = [v for _, v in enumerate(sampled_arch_datast_idx) if v != None]
@@ -121,7 +121,7 @@ def evaluate(model, sampler, tier_list, batch_statics_dict, dataset : NASBenchDa
     for it, batch in enumerate(sampled_dataloader):
         batch_start = time.time()
 
-        arch_feature, val_acc, test_acc, params, flops, n_nodes = batch
+        arch_feature, val_acc, test_acc, params, flops, n_nodes, rank = batch
         arch_feature = arch_feature.float().cuda(device)
         params = params.float().cuda(device)
         flops = flops.float().cuda(device)
@@ -136,11 +136,14 @@ def evaluate(model, sampler, tier_list, batch_statics_dict, dataset : NASBenchDa
         classify_tier_counts_by_pred(params, flops, n_nodes, tier_list, output, args.bins)
 
         # find best arch
-        # TODO: 提取 test acc 和 对应的全局排名
         _, index = torch.topk(output, k=1, dim=1)
         index = index.squeeze(dim=1)
         idx = torch.where(index == 0)   # tier 1 对应的下标
-        results = test_acc[idx]
+        import pdb;pdb.set_trace()
+        best_acc=max(test_acc[idx].tolist())
+        best_rank = min(rank[idx].tolist())
+        
+        print(best_acc, best_rank, best_rank/len(dataset) *100)
 
 
 

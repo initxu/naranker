@@ -40,9 +40,21 @@ class NASBenchDataBase(object):
 
         for arch in dataset:
             self.archs[arch['unique_hash']] = arch
+        
+        self._sort()
 
         elapsed = time.time() - start
         print('Loaded dataset in {:.4f} seconds'.format(elapsed))
+
+    def _sort(self):
+        sorted_list = []
+        for hash_key, arch in self.archs.items():
+            sorted_list.append((hash_key, arch['avg_test_accuracy']))
+        
+        sorted_list = sorted(sorted_list, key=lambda item:item[1], reverse=True)
+        
+        for rank, (hash, _) in enumerate(sorted_list, start=1):
+            self.archs[hash]['rank'] = rank
 
     def _check_spec(self, model_spec: ModelSpec):
         """Checks that the model spec is within the dataset."""

@@ -27,7 +27,7 @@ def train_epoch(model, train_dataloader, criterion, optimizer, lr_scheduler,
         batch_start = time.time()
         total_iter = epoch * len(train_dataloader) + it
         
-        arch_feature, val_acc, test_acc, params, flops, n_nodes = batch
+        arch_feature, val_acc, test_acc, params, flops, n_nodes, rank = batch
         arch_feature = arch_feature.float().cuda(device)
         val_acc = val_acc.float().cuda(device)
         params = params.float().cuda(device)
@@ -97,7 +97,7 @@ def validate(model, val_dataloader, criterion, device, args, logger, epoch, flag
     for it, batch in enumerate(val_dataloader):
         batch_start = time.time()
         
-        arch_feature, val_acc, test_acc, params, flops, n_nodes = batch
+        arch_feature, val_acc, test_acc, params, flops, n_nodes, rank = batch
         arch_feature = arch_feature.float().cuda(device)
         val_acc = val_acc.float().cuda(device)
         params = params.float().cuda(device)
