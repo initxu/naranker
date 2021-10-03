@@ -170,15 +170,15 @@ def main():
     history_best_arch_iter = 0
     history_best_rank=0
     sampled_arch_acc = AverageMeter()
-    for epoch in range(args.ranker_epochs, args.sampler_epochs):
+    for it in range(args.ranker_epochs, args.sampler_epochs):
         flag = 'Sample'
         
         with torch.no_grad():
-            batch_statics_dict, (acc, rank) = evaluate(ranker, sampler, tier_list, batch_statics_dict, dataset, epoch, args, device, tb_writer, logger, flag)
+            batch_statics_dict, (acc, rank) = evaluate(ranker, sampler, tier_list, batch_statics_dict, dataset, it, args, device, tb_writer, logger, flag)
             sampled_arch_acc.update(acc, n=1)
             
             if acc > history_best_acc:
-                history_best_arch_iter = epoch - args.ranker_epochs
+                history_best_arch_iter = it - args.ranker_epochs
                 history_best_acc = acc
                 history_best_rank = rank
                 logger.info('Found History Best Arch in Iter {:2d}: Test Acc {:.8f} Rank: {:4d}(top {:.2%})'.format(
