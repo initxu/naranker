@@ -14,6 +14,7 @@ from utils.optim import LRScheduler
 from utils.metric import AverageMeter
 from utils.setup import setup_seed, setup_logger
 from utils.config import get_config
+from utils.saver import save_checkpoint
 from process import train_epoch, validate, evaluate_sampled_batch
 from process.train_utils import init_tier_list
 
@@ -147,6 +148,8 @@ def main():
     reuse_step=args.sampler.reuse_step,
     )
 
+    best_acc = 0
+    is_best = False
     # train ranker
     for epoch in range(args.start_epochs, args.ranker_epochs):
         flag = 'Ranker Train'
@@ -154,12 +157,20 @@ def main():
         tb_writer.add_scalar('{}/epoch_accuracy'.format(flag), train_acc, epoch)
         tb_writer.add_scalar('{}/epoch_loss'.format(flag), train_loss, epoch)
 
-        if (epoch+1) % args.validate_freq == 0:
-            with torch.no_grad():
-                flag = 'Ranker Validate'
-                val_acc, val_loss = validate(ranker, val_dataloader, criterion, device, args, logger, epoch, flag)
-                tb_writer.add_scalar('{}/epoch_accuracy'.format(flag), val_acc, epoch)
-                tb_writer.add_scalar('{}/epoch_loss'.format(flag), val_loss, epoch)
+        # if (epoch+1) % args.validate_freq == 0:
+        with torch.no_grad():
+            flag = 'Ranker Validate'
+            val_acc, val_loss = validate(ranker, val_dataloader, criterion, device, args, logger, epoch, flag)
+            tb_writer.add_scalar('{}/epoch_accuracy'.format(flag), val_acc, epoch)
+            tb_writer.add_scalar('{}/epoch_loss'.format(flag), val_loss, epoch)
+
+        args.save_path = os.path.join(args.save_dir, 'ckp_last.pth.tar')
+        if val_acc > best_acc:
+            is_best = True
+            best_acc = val_acc
+        else:
+            is_best = False
+        save_checkpoint(args.save_path, ranker, optimizer, lr_scheduler, args, epoch, is_best)
         
     # sample
     assert args.sampler_epochs > args.ranker_epochs, 'sampler_epochs should be larger than ranker_epochs'
