@@ -9,13 +9,13 @@ from dataset import NASBenchDataBase, NASBenchDataset, SplitSubet
 from architecture import Bucket
 from ranker import Transformer
 from sampler import ArchSampler
-from process import train_epoch, validate, evaluate
-from process.train_utils import init_tier_list
-from utils.setup import setup_seed, setup_logger
-from utils.config import get_config
 from utils.loss_ops import CrossEntropyLossSoft
 from utils.optim import LRScheduler
 from utils.metric import AverageMeter
+from utils.setup import setup_seed, setup_logger
+from utils.config import get_config
+from process import train_epoch, validate, evaluate_sampled_batch
+from process.train_utils import init_tier_list
 
 
 def get_args():
@@ -169,25 +169,28 @@ def main():
     history_best_acc = 0
     history_best_arch_iter = 0
     history_best_rank=0
+    history_best_distri = batch_statics_dict
     sampled_arch_acc = AverageMeter()
     for it in range(args.ranker_epochs, args.sampler_epochs):
         flag = 'Sample'
         
         with torch.no_grad():
-            batch_statics_dict, (acc, rank) = evaluate(ranker, sampler, tier_list, batch_statics_dict, dataset, it, args, device, tb_writer, logger, flag)
+            batch_statics_dict, (acc, rank) = evaluate_sampled_batch(ranker, sampler, tier_list, history_best_distri, dataset, it, args, device, tb_writer, logger, flag)
             sampled_arch_acc.update(acc, n=1)
             
             if acc > history_best_acc:
                 history_best_arch_iter = it - args.ranker_epochs
                 history_best_acc = acc
                 history_best_rank = rank
-                logger.info('Found History Best Arch in Iter {:2d}: Test Acc {:.8f} Rank: {:4d}(top {:.2%})'.format(
+                logger.info('[Best] Found History Best Arch in Iter {:2d}: Test Acc {:.8f} Rank: {:4d}(top {:.2%})'.format(
                     history_best_arch_iter,
                     history_best_acc,  
                     history_best_rank,
                     history_best_rank/len(dataset)))
-            
-    logger.info('Derive History Best Arch in Iter {:2d}: Test Acc {:.8f} Rank: {:4d}(top {:.2%}), Avg Test Acc {:.8f}'.format(
+                
+                # history_best_distri = batch_statics_dict
+                
+    logger.info('[Result] Derive History Best Arch in Iter {:2d}: Test Acc {:.8f} Rank: {:4d}(top {:.2%}), Avg Test Acc {:.8f}'.format(
         history_best_arch_iter,
         history_best_acc,  
         history_best_rank,

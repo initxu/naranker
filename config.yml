@@ -1,7 +1,6 @@
 arch: "NAR"
 
-exp_name: "sample_trail_1"
-
+exp_name: "update_distri_with_bestacc_noisy01"
 seed: 20211117
 
 is_cuda: True
@@ -26,7 +25,7 @@ batch_size: 256
 
 start_epochs: 0
 ranker_epochs: 50
-sampler_epochs: 200
+sampler_epochs: 150
 validate_freq: 1
 
 strategy: "val_acc"
@@ -60,10 +59,10 @@ lr_scheduler:
 sampler:
   top_tier: 1
   last_tier: 4 # 其实是从计数3到4，即最后两个tier
-  batch_factor: 0.08
-  reuse_step: 24 # for batch 128
+  batch_factor: 0.1
+  reuse_step: 25 # for 25 batch 128, 12 for batch 64
   max_trails: 100
-  noisy_factor: 0
+  noisy_factor: 0.1
   flops_kl_thred: 2
   params_kl_thred: 2
   n_nodes_kl_thred: 1
