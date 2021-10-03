@@ -1,6 +1,6 @@
 arch: "NAR"
 
-exp_name: "kldiv_test"
+exp_name: "sample_trail_1"
 
 seed: 20211117
 
@@ -16,18 +16,18 @@ node_type_dict:
 max_edges: 9
 
 # train_size: 34362
-train_size: 3436
+train_size: 4236
 # val_size: 8000
-val_size: 800
+val_size: 1059
 drop_last: True
 data_loader_workers: 6
 
 batch_size: 256
 
 start_epochs: 0
-ranker_epochs: 30
+ranker_epochs: 50
 sampler_epochs: 200
-validate_freq: 5
+validate_freq: 1
 
 strategy: "val_acc"
 
@@ -35,12 +35,12 @@ ranker:
   n_tier: 5
   n_arch_patch: 19
   d_patch: 7
-  d_patch_vec: 512
-  d_model: 512
+  d_patch_vec: 256
+  d_model: 256
   d_ffn_inner: 2048
-  d_tier_prj_inner: 1024
+  d_tier_prj_inner: 512
   n_layers: 6
-  n_head: 8
+  n_head: 4
   d_k: 64
   d_v: 64
   dropout: 0.1
@@ -55,16 +55,16 @@ optimizer:
 
 lr_scheduler:
   lr_mul: 0.05
-  n_warmup_steps: 100
+  n_warmup_steps: 300
 
 sampler:
   top_tier: 1
   last_tier: 4 # 其实是从计数3到4，即最后两个tier
-  batch_factor: 0.1
-  reuse_step: 50
+  batch_factor: 0.08
+  reuse_step: 24 # for batch 128
   max_trails: 100
   noisy_factor: 0
-  flops_kl_thred: 2.5
+  flops_kl_thred: 2
   params_kl_thred: 2
   n_nodes_kl_thred: 1
   sample_size: 128
