@@ -7,7 +7,7 @@ from dataset import NASBenchDataset, SplitSubet
 
 from .train_utils import *
 
-def evaluate(model, sampler, tier_list, batch_statics_dict, dataset : NASBenchDataset, it, args, device, writer, logger, flag):
+def evaluate_sampled_batch(model, sampler, tier_list, batch_statics_dict, dataset : NASBenchDataset, it, args, device, writer, logger, flag):
 
     sample_start = time.time()
 
