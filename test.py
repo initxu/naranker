@@ -1,5 +1,4 @@
 import os
-import time
 import torch
 import argparse
 import torch.utils.data
@@ -27,7 +26,7 @@ def get_args():
                         type=str,
                         help='Path to load data')
     parser.add_argument('--save_dir',
-                        default='./output/bins16_20211004103645',
+                        default='./output/bestarch_distri_wnoisy_20211004173337',
                         type=str,
                         help='Path to save output')
     parser.add_argument('--checkpoint',
@@ -141,7 +140,7 @@ def main():
                     history_best_acc,  
                     history_best_rank,
                     history_best_rank/len(dataset)))
-                
+            # else:
                 # history_best_distri = batch_statics_dict
                 
     logger.info('[Result] Derive History Best Arch in Iter {:2d}: Test Acc {:.8f} Rank: {:4d}(top {:.2%}), Avg Test Acc {:.8f}'.format(
@@ -153,7 +152,6 @@ def main():
     
 
 if __name__ == '__main__':
-        
         main()
 
 

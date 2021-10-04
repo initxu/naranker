@@ -1,6 +1,6 @@
 arch: "NAR"
 
-exp_name: "update_distri_with_bestacc_noisy01"
+exp_name: "debug"
 seed: 20211117
 
 is_cuda: True
@@ -63,11 +63,11 @@ sampler:
   reuse_step: 25 # for 25 batch 128, 12 for batch 64
   max_trails: 100
   noisy_factor: 0.1
-  flops_kl_thred: 2
-  params_kl_thred: 2
-  n_nodes_kl_thred: 1
-  sample_size: 128
-  search_size: 128
+  flops_kl_thred: 2.5
+  params_kl_thred: 2.5
+  sample_size: 256
+  search_size: 256
+  force_uniform: False    # for params and flops sample, n_nodes are always uniform
 
 
 bins: 8

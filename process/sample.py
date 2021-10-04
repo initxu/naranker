@@ -4,22 +4,22 @@ import random
 import torch.utils.data
 
 from dataset import NASBenchDataset, SplitSubet
+from sampler import ArchSampler
 
 from .train_utils import *
 
-def evaluate_sampled_batch(model, sampler, tier_list, batch_statics_dict, dataset : NASBenchDataset, it, args, device, writer, logger, flag):
+def evaluate_sampled_batch(model, sampler : ArchSampler, tier_list, batch_statics_dict, dataset : NASBenchDataset, it, args, device, writer, logger, flag):
 
     sample_start = time.time()
 
     sample_size = int(args.sampler.sample_size * (1 - args.sampler.noisy_factor))
     kl_thred = [
         args.sampler.flops_kl_thred, 
-        args.sampler.params_kl_thred,
-        args.sampler.n_nodes_kl_thred
+        args.sampler.params_kl_thred
     ]
 
     # sample from entire dataset
-    sampled_arch, sampled_arch_datast_idx = sampler.sample_arch(batch_statics_dict, sample_size, dataset, kl_thred, args.sampler.max_trails)
+    sampled_arch, sampled_arch_datast_idx = sampler.sample_arch(batch_statics_dict, sample_size, dataset, kl_thred, args.sampler.max_trails, args.sampler.force_uniform)
     sampled_arch_datast_idx = [v for _, v in enumerate(sampled_arch_datast_idx) if v != None]
     if writer:
         writer.add_scalar('{}/number_sampled_archs'.format(flag), len(sampled_arch_datast_idx), it)

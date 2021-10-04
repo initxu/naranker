@@ -5,6 +5,7 @@ Method: Distribution and probability are modified from AttentiveNAS
 """
 import torch
 import math
+import copy
 import torch.nn.functional as F
 
 def compute_kl_div(input_seq, target_seq): 
@@ -87,7 +88,7 @@ def select_distri(candi_list, top_tier, last_tier, threshold_kl_div, batch_size,
                 # 当差结构的分布与candi的分布相近时，表明candi分布不能代表优秀的结构
                 return None
 
-        return convert_count_to_prob(candi)
+        return convert_count_to_prob(copy.deepcopy(candi))
 
 if __name__ == '__main__':
 
