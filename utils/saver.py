@@ -9,12 +9,14 @@ def save_checkpoint(save_path,
                     lr_scheduler,
                     args,
                     epoch,
+                    batch_statics_dict,
                     is_best=False):
     save_state = {
         'epoch': epoch + 1, # 读取时，从epoch+1开始更新学习率
         'args': args,
         'state_dict': model.state_dict(),
         'optimizer': optimizer.state_dict(),
+        'batch_distri': batch_statics_dict,
         'lr_scheduler': lr_scheduler.__dict__   # 'lr_mul': 0.05, 'd_model': 256, 'n_warmup_steps': 300, 'n_steps': 0 step是自动更新的，直接load进去开始训即可接上
     }
 

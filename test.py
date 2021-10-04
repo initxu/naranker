@@ -1,21 +1,18 @@
 import os
 import time
+import torch
 import argparse
 import torch.utils.data
-import torch.optim as optim
-from torch.utils.tensorboard import SummaryWriter
 
 from dataset import NASBenchDataBase, NASBenchDataset, SplitSubet
 from architecture import Bucket
 from ranker import Transformer
 from sampler import ArchSampler
-from utils.loss_ops import CrossEntropyLossSoft
-from utils.optim import LRScheduler
 from utils.metric import AverageMeter
-from utils.setup import setup_seed, setup_logger
+from utils.loss_ops import CrossEntropyLossSoft
 from utils.config import get_config
-from utils.saver import save_checkpoint
-from process import train_epoch, validate, evaluate_sampled_batch
+from utils.setup import setup_seed, setup_logger
+from process import validate, evaluate_sampled_batch
 from process.train_utils import init_tier_list
 
 
@@ -30,43 +27,33 @@ def get_args():
                         type=str,
                         help='Path to load data')
     parser.add_argument('--save_dir',
-                        default='./output',
+                        default='./output/bins16_20211004103645',
                         type=str,
                         help='Path to save output')
+    parser.add_argument('--checkpoint',
+                        default='ckp_best.pth.tar',
+                        type=str,
+                        help='checkpoint file')
 
     args = parser.parse_args()
 
     return args
 
-
-def build_arg_and_env(run_args):
-    args = get_config(run_args.config_file)
-
-    args.config_file = run_args.config_file
-    args.data_path = run_args.data_path
-
-    if not os.path.exists(run_args.save_dir):  # 创建output文件存放各种实验文件夹
-        os.makedirs(run_args.save_dir)
-
-    args.save_dir = os.path.join(
-        run_args.save_dir,
-        args.exp_name + '_' + time.strftime('%Y%m%d%H%M%S', time.localtime()))
-
-    if not os.path.exists(args.save_dir):
-        os.makedirs(args.save_dir)  # 创建当前实验的文件夹
-
-    return args
-
-
 def main():
     run_args = get_args()
-    args = build_arg_and_env(run_args)
+    
+    args = get_config(run_args.config_file)
+    args.config_file = run_args.config_file
+    args.data_path = run_args.data_path
+    args.save_dir = run_args.save_dir
+    
+    ckp_path = os.path.join(run_args.save_dir, run_args.checkpoint)
+    assert os.path.isfile(ckp_path), 'Checkpoint file does not exist at {}'.format(ckp_path)
+    with open(ckp_path, 'rb') as f:
+        checkpoint = torch.load(f, map_location=torch.device('cpu'))
 
-    # setup logger
-    logger = setup_logger(save_path=os.path.join(args.save_dir, "train.log"))
+    logger = setup_logger(save_path=os.path.join(args.save_dir, "test.log"))
     logger.info(args)
-    # setup tensorboard
-    tb_writer = SummaryWriter(os.path.join(args.save_dir,'tensorboard'))
 
     # setup global seed
     setup_seed(seed=args.seed)
@@ -82,18 +69,9 @@ def main():
     if args.space == 'nasbench':
         database = NASBenchDataBase(args.data_path)
         dataset = NASBenchDataset(database, seed=args.seed)
-        trainset = SplitSubet(dataset, list(range(args.train_size)))
         valset = SplitSubet(dataset, list(range(args.train_size, args.train_size + args.val_size)))
-
+        
     # build dataloader
-    train_dataloader = torch.utils.data.DataLoader(
-        trainset,
-        batch_size=args.batch_size,
-        shuffle=True,
-        drop_last=getattr(args, 'drop_last', True),
-        num_workers=args.data_loader_workers,
-        pin_memory=True)
-
     val_dataloader = torch.utils.data.DataLoader(
         valset,
         batch_size=args.batch_size,
@@ -102,10 +80,8 @@ def main():
         num_workers=args.data_loader_workers,
         pin_memory=True)
 
-    # build loss
     criterion = CrossEntropyLossSoft().cuda(device)
 
-    # build model
     logger.info('Building model with {}'.format(args.ranker))
     ranker = Transformer(
         n_tier=args.ranker.n_tier,
@@ -122,22 +98,9 @@ def main():
         dropout=args.ranker.dropout,
         n_position=args.ranker.n_position,
         scale_prj=args.ranker.scale_prj)
-    ranker.cuda(device)
-
-    # build optimizer and lr_scheduler
-    logger.info('Building optimizer and lr_scheduler')
-    optimizer = optim.AdamW(
-        ranker.parameters(),
-        betas=(args.optimizer.beta1,args.optimizer.beta2),
-        eps=args.optimizer.eps,
-        weight_decay=args.optimizer.weight_decay)
     
-    # 由于初始lr由LRScheduler设定，因此lr update要优先于optimizer.step()
-    lr_scheduler = LRScheduler(
-        optimizer,
-        lr_mul=args.lr_scheduler.lr_mul,
-        d_model=args.ranker.d_model,
-        n_warmup_steps=args.lr_scheduler.n_warmup_steps)
+    ranker.load_state_dict(checkpoint['state_dict'])
+    ranker.cuda(device)
 
     sampler = ArchSampler(
     top_tier=args.sampler.top_tier,
@@ -148,30 +111,10 @@ def main():
     reuse_step=args.sampler.reuse_step,
     )
 
-    best_acc = 0
-    is_best = False
-    # train ranker
-    for epoch in range(args.start_epochs, args.ranker_epochs):
-        flag = 'Ranker Train'
-        train_acc, train_loss, batch_statics_dict = train_epoch(ranker, train_dataloader, criterion, optimizer, lr_scheduler, device, args, logger, tb_writer, epoch, flag)
-        tb_writer.add_scalar('{}/epoch_accuracy'.format(flag), train_acc, epoch)
-        tb_writer.add_scalar('{}/epoch_loss'.format(flag), train_loss, epoch)
+    with torch.no_grad():
+        flag = 'Ranker Test'
+        val_acc, val_loss = validate(ranker, val_dataloader, criterion, device, args, logger, 0, flag)
 
-        # if (epoch+1) % args.validate_freq == 0:
-        with torch.no_grad():
-            flag = 'Ranker Validate'
-            val_acc, val_loss = validate(ranker, val_dataloader, criterion, device, args, logger, epoch, flag)
-            tb_writer.add_scalar('{}/epoch_accuracy'.format(flag), val_acc, epoch)
-            tb_writer.add_scalar('{}/epoch_loss'.format(flag), val_loss, epoch)
-
-        args.save_path = os.path.join(args.save_dir, 'ckp_last.pth.tar')
-        if val_acc > best_acc:
-            is_best = True
-            best_acc = val_acc
-        else:
-            is_best = False
-        save_checkpoint(args.save_path, ranker, optimizer, lr_scheduler, args, epoch, batch_statics_dict, is_best)
-        
     # sample
     assert args.sampler_epochs > args.ranker_epochs, 'sampler_epochs should be larger than ranker_epochs'
     assert Bucket.get_n_tier()==0, 'Bucket counts should be reset to 0'
@@ -180,13 +123,13 @@ def main():
     history_best_acc = 0
     history_best_arch_iter = 0
     history_best_rank=0
-    history_best_distri = batch_statics_dict
+    history_best_distri = checkpoint['batch_distri']
     sampled_arch_acc = AverageMeter()
     for it in range(args.ranker_epochs, args.sampler_epochs):
-        flag = 'Sample'
+        flag = 'Sample Test'
         
         with torch.no_grad():
-            batch_statics_dict, (acc, rank) = evaluate_sampled_batch(ranker, sampler, tier_list, history_best_distri, dataset, it, args, device, tb_writer, logger, flag)
+            batch_statics_dict, (acc, rank) = evaluate_sampled_batch(ranker, sampler, tier_list, history_best_distri, dataset, it, args, device, None, logger, flag)
             sampled_arch_acc.update(acc, n=1)
             
             if acc > history_best_acc:
@@ -207,17 +150,10 @@ def main():
         history_best_rank,
         history_best_rank/len(dataset),
         sampled_arch_acc.avg))
-
-
-
-
-
-        
-
-        
-        
-
-
+    
 
 if __name__ == '__main__':
-    main()
+        
+        main()
+
+

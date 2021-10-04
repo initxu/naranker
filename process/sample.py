@@ -21,7 +21,8 @@ def evaluate_sampled_batch(model, sampler, tier_list, batch_statics_dict, datase
     # sample from entire dataset
     sampled_arch, sampled_arch_datast_idx = sampler.sample_arch(batch_statics_dict, sample_size, dataset, kl_thred, args.sampler.max_trails)
     sampled_arch_datast_idx = [v for _, v in enumerate(sampled_arch_datast_idx) if v != None]
-    writer.add_scalar('{}/number_sampled_archs'.format(flag), len(sampled_arch_datast_idx), it)
+    if writer:
+        writer.add_scalar('{}/number_sampled_archs'.format(flag), len(sampled_arch_datast_idx), it)
 
     # complement
     noisy_len = args.sampler.sample_size - len(sampled_arch_datast_idx)
