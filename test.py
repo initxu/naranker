@@ -28,7 +28,7 @@ def get_args():
                         type=str,
                         help='Path to load data')
     parser.add_argument('--save_dir',
-                        default='./output/debug_20211004222805',
+                        default='./output/history_distri_20211005140512',
                         type=str,
                         help='Path to save output')
     parser.add_argument('--checkpoint',

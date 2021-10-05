@@ -187,12 +187,17 @@ def main():
 
     # the distri_list are all the same throughout the epoch, but the checkpoint saves only the one when ranker has highest val acc
     # here load ckp for uniform with the test.py
-    # if args.sampler.is_checkpoint:
-    #     ckp_path = os.path.join(args.save_dir, 'ckp_best.pth.tar')
-    #     assert os.path.isfile(ckp_path), 'Checkpoint file does not exist at {}'.format(ckp_path)
-    #     with open(ckp_path, 'rb') as f:
-    #         checkpoint = torch.load(f, map_location=torch.device('cpu'))
-    #     distri_list = checkpoint['distri']
+    if args.sampler.is_checkpoint:
+        ckp_path = os.path.join(args.save_dir, 'ckp_best.pth.tar')
+        assert os.path.isfile(ckp_path), 'Checkpoint file does not exist at {}'.format(ckp_path)
+        with open(ckp_path, 'rb') as f:
+            checkpoint = torch.load(f, map_location=torch.device('cpu'))
+        
+        distri_list = checkpoint['distri']
+        ranker.load_state_dict(checkpoint['state_dict'])
+        ranker.cuda(device)
+
+        logger.info('Start to use {} file for sampling'.format(ckp_path))
 
     random.shuffle(distri_list)
     distri_length = len(distri_list)
