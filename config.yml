@@ -14,21 +14,20 @@ node_type_dict:
   output: 5
 max_edges: 9
 
-# train_size: 34362
 train_size: 4236
-# val_size: 8000
 val_size: 1059
 drop_last: True
 data_loader_workers: 6
-
 batch_size: 256
 
 start_epochs: 0
 ranker_epochs: 50
-sampler_epochs: 150
+sampler_epochs: 100
 validate_freq: 1
 
 strategy: "val_acc"
+
+bins: 8
 
 ranker:
   n_tier: 5
@@ -69,6 +68,3 @@ sampler:
   search_size: 256
   force_uniform: False    # for params and flops sample, n_nodes are always uniform
   is_checkpoint: True
-
-
-bins: 8

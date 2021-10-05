@@ -28,7 +28,7 @@ def get_args():
                         type=str,
                         help='Path to load data')
     parser.add_argument('--save_dir',
-                        default='./output/history_distri_20211005140512',
+                        default='./output/force_uniform_20211005205808',
                         type=str,
                         help='Path to save output')
     parser.add_argument('--checkpoint',
@@ -122,11 +122,11 @@ def main():
     assert Bucket.get_n_tier()==0, 'Bucket counts should be reset to 0'
     tier_list = init_tier_list(args)
     
-    history_best_acc = 0
-    history_best_arch_iter = 0
-    history_best_rank=0
+    # tpk1_list = []
+    tpk5_list = []
     history_best_distri = {}
-    sampled_arch_acc = AverageMeter()
+    # tpk1_meter = AverageMeter()
+    tpk5_meter = AverageMeter()
 
     distri_list = checkpoint['distri']
     random.shuffle(distri_list)
@@ -139,27 +139,26 @@ def main():
             if (it-args.ranker_epochs)%distri_reuse_step==0:
                 history_best_distri = distri_list[(it-args.ranker_epochs)//distri_reuse_step]
 
-            batch_statics_dict, (acc, rank) = evaluate_sampled_batch(ranker, sampler, tier_list, history_best_distri, dataset, it, args, device, None, logger, flag)
-            sampled_arch_acc.update(acc, n=1)
-            
-            if acc > history_best_acc:
-                history_best_arch_iter = it - args.ranker_epochs
-                history_best_acc = acc
-                history_best_rank = rank
-                logger.info('[Best] Found History Best Arch in Iter {:2d}: Test Acc {:.8f} Rank: {:4d}(top {:.2%})'.format(
-                    history_best_arch_iter,
-                    history_best_acc,  
-                    history_best_rank,
-                    history_best_rank/len(dataset)))
-            # else:
-                # history_best_distri = batch_statics_dict
-                
-    logger.info('[Result] Derive History Best Arch in Iter {:2d}: Test Acc {:.8f} Rank: {:4d}(top {:.2%}), Avg Test Acc {:.8f}'.format(
-        history_best_arch_iter,
-        history_best_acc,  
-        history_best_rank,
-        history_best_rank/len(dataset),
-        sampled_arch_acc.avg))
+            batch_statics_dict, best_acc_at1, best_rank_at1, best_acc_at5, best_rank_at5 = evaluate_sampled_batch(ranker, sampler, tier_list, history_best_distri, dataset, it, args, device, None, logger, flag)
+            # tpk1_meter.update(best_acc_at1, n=1)
+            # tpk1_list.append((it-args.ranker_epochs, best_acc_at1, best_rank_at1))
+            tpk5_meter.update(best_acc_at5, n=1)
+            tpk5_list.append((it-args.ranker_epochs, best_acc_at5, best_rank_at5))
+    
+    # tpk1_best = sorted(tpk1_list, key=lambda item:item[1], reverse=True)[0]
+    # logger.info('[Result] Top1 Best Arch in Iter {:2d}: Test Acc {:.8f} Rank: {:5d}(top{:.2%}), Avg Test Acc {:.8f}'.format(
+    #     tpk1_best[0],
+    #     tpk1_best[1],  
+    #     tpk1_best[2],
+    #     tpk1_best[2]/len(dataset),
+    #     tpk1_meter.avg))
+    tpk5_best = sorted(tpk5_list, key=lambda item:item[1], reverse=True)[0]
+    logger.info('[Result] Top5 Best Arch in Iter {:2d}: Test Acc {:.8f} Rank: {:5d}(top {:.2%}), Avg Test Acc {:.8f}'.format(
+        tpk5_best[0],
+        tpk5_best[1],  
+        tpk5_best[2],
+        tpk5_best[2]/len(dataset),
+        tpk5_meter.avg))
     
 
 if __name__ == '__main__':
