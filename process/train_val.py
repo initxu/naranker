@@ -20,6 +20,7 @@ def train_epoch(model, train_dataloader, criterion, optimizer, lr_scheduler,
     
     model.train()
 
+    distri_list = []
     assert Bucket.get_n_tier()==0, 'Bucket counts should be reset to 0'
     tier_list = init_tier_list(args)
 
@@ -62,6 +63,7 @@ def train_epoch(model, train_dataloader, criterion, optimizer, lr_scheduler,
         classify_tier_emb_by_target(total_embedding_list, tier_list, target)
         classify_tier_counts_by_target(params, flops, n_nodes, tier_list, target, args.bins)
         batch_statics_dict = get_batch_statics(tier_list)
+        distri_list.append(batch_statics_dict)
         
         for k in batch_statics_dict:
             candi_dic = compare_kl_div(copy.deepcopy(batch_statics_dict[k]))
@@ -85,7 +87,7 @@ def train_epoch(model, train_dataloader, criterion, optimizer, lr_scheduler,
     epoch_time = time.time() - epoch_start
     logger.info('[{}][Epoch:{:2d}] Time: {:.2f} Epoch Acc: {:.4f} Epoch Loss: {:.6f}'.format(flag, epoch, epoch_time, batch_acc.avg, batch_loss.avg))
     
-    return batch_acc.avg, batch_loss.avg, batch_statics_dict
+    return batch_acc.avg, batch_loss.avg, distri_list
 
 def validate(model, val_dataloader, criterion, device, args, logger, epoch, flag):
     epoch_start = time.time()

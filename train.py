@@ -1,5 +1,7 @@
 import os
 import time
+import math
+import random
 import argparse
 import torch.utils.data
 import torch.optim as optim
@@ -153,7 +155,7 @@ def main():
     # train ranker
     for epoch in range(args.start_epochs, args.ranker_epochs):
         flag = 'Ranker Train'
-        train_acc, train_loss, batch_statics_dict = train_epoch(ranker, train_dataloader, criterion, optimizer, lr_scheduler, device, args, logger, tb_writer, epoch, flag)
+        train_acc, train_loss, distri_list = train_epoch(ranker, train_dataloader, criterion, optimizer, lr_scheduler, device, args, logger, tb_writer, epoch, flag)
         tb_writer.add_scalar('{}/epoch_accuracy'.format(flag), train_acc, epoch)
         tb_writer.add_scalar('{}/epoch_loss'.format(flag), train_loss, epoch)
 
@@ -170,7 +172,7 @@ def main():
             best_acc = val_acc
         else:
             is_best = False
-        save_checkpoint(args.save_path, ranker, optimizer, lr_scheduler, args, epoch, batch_statics_dict, is_best)
+        save_checkpoint(args.save_path, ranker, optimizer, lr_scheduler, args, epoch, distri_list, is_best)
         
     # sample
     assert args.sampler_epochs > args.ranker_epochs, 'sampler_epochs should be larger than ranker_epochs'
@@ -180,12 +182,28 @@ def main():
     history_best_acc = 0
     history_best_arch_iter = 0
     history_best_rank=0
-    history_best_distri = batch_statics_dict
+    history_best_distri = {}
     sampled_arch_acc = AverageMeter()
+
+    # the distri_list are all the same throughout the epoch, but the checkpoint saves only the one when ranker has highest val acc
+    # here load ckp for uniform with the test.py
+    # if args.sampler.is_checkpoint:
+    #     ckp_path = os.path.join(args.save_dir, 'ckp_best.pth.tar')
+    #     assert os.path.isfile(ckp_path), 'Checkpoint file does not exist at {}'.format(ckp_path)
+    #     with open(ckp_path, 'rb') as f:
+    #         checkpoint = torch.load(f, map_location=torch.device('cpu'))
+    #     distri_list = checkpoint['distri']
+
+    random.shuffle(distri_list)
+    distri_length = len(distri_list)
+    distri_reuse_step = math.ceil((args.sampler_epochs-args.ranker_epochs)/distri_length)
     for it in range(args.ranker_epochs, args.sampler_epochs):
         flag = 'Sample'
         
         with torch.no_grad():
+            if (it-args.ranker_epochs)%distri_reuse_step==0:
+                history_best_distri = distri_list[(it-args.ranker_epochs)//distri_reuse_step]
+
             batch_statics_dict, (acc, rank) = evaluate_sampled_batch(ranker, sampler, tier_list, history_best_distri, dataset, it, args, device, tb_writer, logger, flag)
             sampled_arch_acc.update(acc, n=1)
             
@@ -207,16 +225,6 @@ def main():
         history_best_rank,
         history_best_rank/len(dataset),
         sampled_arch_acc.avg))
-
-
-
-
-
-        
-
-        
-        
-
 
 
 if __name__ == '__main__':

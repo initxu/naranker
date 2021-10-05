@@ -1,5 +1,7 @@
 import os
+import math
 import torch
+import random
 import argparse
 import torch.utils.data
 
@@ -26,7 +28,7 @@ def get_args():
                         type=str,
                         help='Path to load data')
     parser.add_argument('--save_dir',
-                        default='./output/bestarch_distri_wnoisy_20211004173337',
+                        default='./output/debug_20211004222805',
                         type=str,
                         help='Path to save output')
     parser.add_argument('--checkpoint',
@@ -110,6 +112,7 @@ def main():
     reuse_step=args.sampler.reuse_step,
     )
 
+    logger.info('Start to use {} file for testing ranker and sampling'.format(ckp_path))
     with torch.no_grad():
         flag = 'Ranker Test'
         val_acc, val_loss = validate(ranker, val_dataloader, criterion, device, args, logger, 0, flag)
@@ -122,12 +125,20 @@ def main():
     history_best_acc = 0
     history_best_arch_iter = 0
     history_best_rank=0
-    history_best_distri = checkpoint['batch_distri']
+    history_best_distri = {}
     sampled_arch_acc = AverageMeter()
+
+    distri_list = checkpoint['distri']
+    random.shuffle(distri_list)
+    distri_length = len(distri_list)
+    distri_reuse_step = math.ceil((args.sampler_epochs-args.ranker_epochs)/distri_length)
     for it in range(args.ranker_epochs, args.sampler_epochs):
         flag = 'Sample Test'
         
         with torch.no_grad():
+            if (it-args.ranker_epochs)%distri_reuse_step==0:
+                history_best_distri = distri_list[(it-args.ranker_epochs)//distri_reuse_step]
+
             batch_statics_dict, (acc, rank) = evaluate_sampled_batch(ranker, sampler, tier_list, history_best_distri, dataset, it, args, device, None, logger, flag)
             sampled_arch_acc.update(acc, n=1)
             

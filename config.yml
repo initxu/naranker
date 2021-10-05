@@ -68,6 +68,7 @@ sampler:
   sample_size: 256
   search_size: 256
   force_uniform: False    # for params and flops sample, n_nodes are always uniform
+  is_checkpoint: True
 
 
 bins: 8
