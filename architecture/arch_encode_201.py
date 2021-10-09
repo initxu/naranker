@@ -7,7 +7,7 @@ Target: encode NasBench201 arch into 31*4*4 feature tensor for each set in \
 import torch
 import copy
 
-from .nasbench201 import str2lists
+from nasbench201 import str2lists
 
 
 def feature_tensor_encoding_201(arch: dict,
@@ -26,7 +26,7 @@ def feature_tensor_encoding_201(arch: dict,
             coordi_list.append([op[1], col_id])
     # [start_node, end_node] [[0, 1], [0, 2], [1, 2], [0, 3], [1, 3], [2, 3]]
 
-    all_type_tensors_list = []
+    all_type_tensors_list = {}
 
     for net_type in ['cifar10-valid', 'cifar100', 'ImageNet16-120']:
         opt_flops = arch['{}_opt_flops'.format(net_type)]
@@ -46,7 +46,7 @@ def feature_tensor_encoding_201(arch: dict,
         arch_feature_tensor = torch.cat(feature_tensor_list, dim=0)
         assert arch_feature_tensor.size(0) == arch_feature_channels, 'Wrong arch feature_channels'
         
-        all_type_tensors_list.append(arch_feature_tensor)
+        all_type_tensors_list[net_type] = arch_feature_tensor
 
     return all_type_tensors_list
 
@@ -328,6 +328,5 @@ if __name__ == '__main__':
         "arch_str":
         "|nor_conv_3x3~0|+|nor_conv_3x3~0|avg_pool_3x3~1|+|skip_connect~0|nor_conv_3x3~1|skip_connect~2|"
     }
-    l = feature_tensor_encoding_201(b)
-    for i in l:
-        print(i, '\n')
+    l = feature_tensor_encoding_201(a)
+    print(l)
