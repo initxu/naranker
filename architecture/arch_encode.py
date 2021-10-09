@@ -9,7 +9,6 @@ Input: arch:dict
 Output: torch.Tensor(C,H,W) default= 19*7*7 for nasbench101
 """
 
-import json
 import torch
 from  torch.nn import functional as F
 
@@ -113,6 +112,7 @@ if __name__ == "__main__":
 
 
     # for test,测试从json中提出list存储的arch
+    import json
     data_path = '/home/ubuntu/workspace/nar/target.json'
     with open(data_path, 'r') as f:
         dataset = json.load(f)
