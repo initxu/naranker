@@ -31,7 +31,7 @@ class NASBenchDataBase(object):
         self._load_json_file(data_file)
 
     def _load_json_file(self, data_file):
-        print('Loading dataset from file')
+        print('Loading nasbench101 dataset from file')
         start = time.time()
 
         with open(data_file, 'r') as f:
