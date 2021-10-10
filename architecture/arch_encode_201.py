@@ -7,7 +7,7 @@ Target: encode NasBench201 arch into 31*4*4 feature tensor for each set in \
 import torch
 import copy
 
-from nasbench201 import str2lists
+from .nasbench201 import str2lists
 
 
 def feature_tensor_encoding_201(arch: dict,
