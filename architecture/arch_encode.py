@@ -55,17 +55,17 @@ def vector_padding(vector, arch_feature_dim, num_vertices):
 
 def feature_tensor_encoding(arch:dict, arch_feature_dim=7, arch_feature_channels=19):
         
-    matrix_ = arch['module_adjacency']
-    ops_ = arch['module_operations']
+    matrix = arch['module_adjacency']
+    ops = arch['module_operations']
     # params_ = arch['trainable_parameters']
     # flops_ = arch['flops']
     vertex_flops_dict_ = arch['vertex_flops']
     vertex_params_dict_ = arch['vertex_params']
 
-    num_vertices = len(matrix_)
+    num_vertices = len(matrix)
     
-    ops_vector = torch.tensor([type_dict[v] for v in ops_])     # 算子的编码
-    matrix = torch.tensor(matrix_)      # HW, dim=0是行索引，dim=1是列索引
+    ops_vector = torch.tensor([type_dict[v] for v in ops])     # 算子的编码
+    matrix = torch.tensor(matrix)      # HW, dim=0是行索引，dim=1是列索引
     
     if num_vertices < arch_feature_dim:
         matrix = adjacency_matrix_padding(matrix, arch_feature_dim, num_vertices)
