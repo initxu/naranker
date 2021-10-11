@@ -30,9 +30,7 @@ class NASBench201DataBase(object):
         return arch_data_dict
 
     def _sort(self):
-        
         for network_type in ['cifar10', 'cifar100', 'imagenet16']:
-            import pdb;pdb.set_trace()
             sorted_list = []
             for id, arch in self.archs.items():
                 sorted_list.append((id, arch['{}_test_acc'.format(network_type)]))
