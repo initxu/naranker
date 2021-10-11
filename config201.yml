@@ -1,0 +1,70 @@
+arch: "NAR"
+
+exp_name: "debug"
+seed: 20211117
+
+is_cuda: True
+
+space: "nasbench201"
+node_type_dict: 
+  input: 1
+  conv1x1-bn-relu: 2
+  conv3x3-bn-relu: 3
+  maxpool3x3: 4
+  output: 5
+max_edges: 9
+
+train_size: 4236
+val_size: 1059
+drop_last: True
+data_loader_workers: 6
+batch_size: 256
+
+start_epochs: 0
+ranker_epochs: 50
+sampler_epochs: 100
+validate_freq: 1
+
+strategy: "val_acc"
+
+bins: 8
+
+ranker:
+  n_tier: 5
+  n_arch_patch: 19
+  d_patch: 7
+  d_patch_vec: 256
+  d_model: 256
+  d_ffn_inner: 2048
+  d_tier_prj_inner: 512
+  n_layers: 6
+  n_head: 4
+  d_k: 64
+  d_v: 64
+  dropout: 0.1
+  n_position: 200
+  scale_prj: True
+
+optimizer:
+  beta1: 0.9 
+  beta2: 0.982
+  eps: 1.0e-9
+  weight_decay: 5.0e-4 # AdamW默认是1e-2, 这是因为直接将L2正则加在了二阶动量上，可以尝试默认值, tranfomer复现代码是5.0e-4
+
+lr_scheduler:
+  lr_mul: 0.05
+  n_warmup_steps: 300
+
+sampler:
+  top_tier: 1
+  last_tier: 4 # 其实是从计数3到4，即最后两个tier
+  batch_factor: 0.1
+  reuse_step: 25 # for 25 batch 128, 12 for batch 64
+  max_trails: 100
+  noisy_factor: 0.1
+  flops_kl_thred: 2.5
+  params_kl_thred: 2.5
+  sample_size: 256
+  search_size: 256
+  force_uniform: False    # for params and flops sample, n_nodes are always uniform
+  is_checkpoint: True
