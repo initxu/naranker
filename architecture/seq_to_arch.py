@@ -45,6 +45,20 @@ def seq_decode_to_arch(seq):
     return matrix, opt
 
 
+def edges_to_str(total_edges_list: list):
+
+    str_list = []
+    for node_edges in total_edges_list:
+        node_str_list = list(
+            map(lambda item: item[0] + '~' + str(item[1]),
+                [item for item in node_edges]))
+        str_list.append('|' + '|'.join(node_str_list) + '|')
+
+    arch_str = '+'.join(str_list)
+
+    return arch_str
+
+
 if __name__ == '__main__':
     # for debug
     # 输入是[66, 0, 2, 1, 4, 0, 4, 0, 2, 0, 2, 2, None, None, None, None, 2, 4], length = max_edges=9 for nasbench101
