@@ -17,10 +17,12 @@ class NASBench201DataBase(object):
             dataset = json.load(f)
         f.close()
 
-        for arch in dataset:
-            self.archs.update(arch)
+        self.archs = dataset
 
         self._sort()
+        self.arch_str_lists = [
+            arch['arch_str'] for arch in self.archs.values()
+        ]
 
         elapsed = time.time() - start
         print('Loaded dataset in {:.4f} seconds'.format(elapsed))
@@ -33,15 +35,24 @@ class NASBench201DataBase(object):
         for network_type in ['cifar10', 'cifar100', 'imagenet16']:
             sorted_list = []
             for id, arch in self.archs.items():
-                sorted_list.append((id, arch['{}_test_acc'.format(network_type)]))
+                sorted_list.append(
+                    (id, arch['{}_test_acc'.format(network_type)]))
 
-            sorted_list = sorted(sorted_list, key=lambda item:item[1],reverse=True)
+            sorted_list = sorted(sorted_list,
+                                 key=lambda item: item[1],
+                                 reverse=True)
 
             for rank, (id, _) in enumerate(sorted_list, start=1):
                 self.archs[id]['{}_rank'.format(network_type)] = rank
 
     def index_iterator(self):
         return self.archs.keys()
+
+    def check_arch_inside_dataset(self, arch_str: str):
+        if arch_str not in self.arch_str_lists:
+            return None
+        else:
+            return str(self.arch_str_lists.index(arch_str))
 
     @property
     def size(self):

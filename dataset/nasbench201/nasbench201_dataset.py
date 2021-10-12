@@ -21,7 +21,7 @@ class NASBench201Dataset(Dataset):
     def __getitem__(self, index):
         arch_id = self.keys_list[self.index_list[index]]
         arch = self.database.query_by_id(arch_id)
-
+        
         arch_feature = feature_tensor_encoding_201(copy.deepcopy(arch))
 
         network_data = {}
@@ -50,6 +50,23 @@ class NASBench201Dataset(Dataset):
                 network_data['cifar100'] = [arch_feature[net_type], val_acc, test_acc, params, flops, rank]
 
         return network_data
+
+    def query_arch_by_str(self, arch_str:str, network_type):
+        assert network_type in [
+            'cifar10-valid','cifar100','ImageNet16-120'
+            ], 'The network_type arg should choose from cifar10-valid,cifar100,ImageNet16-120'
+        
+        arch_key = self.database.check_arch_inside_dataset(arch_str)
+        if arch_key is None:
+            return None, None, None
+
+        keys_list_idx = self.keys_list.index(arch_key)
+        index_list_idx = self.index_list.index(keys_list_idx)
+
+        flops = self.database.archs[arch_key]['{}_total_flops'.format(network_type)]
+        params = self.database.archs[arch_key]['{}_total_params'.format(network_type)]
+
+        return flops, params, index_list_idx
 
     def __len__(self):
         return self.database.size
