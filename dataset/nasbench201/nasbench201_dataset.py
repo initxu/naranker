@@ -35,19 +35,19 @@ class NASBench201Dataset(Dataset):
                 test_acc = arch['cifar10_test_acc']
                 rank = arch['cifar10_rank']
 
-                network_data['cifar10'] = [arch_feature[net_type], val_acc, test_acc, params, flops, rank]
+                network_data['cifar10'] = (arch_feature[net_type], val_acc, test_acc, params, flops, rank)
             elif net_type == 'ImageNet16-120':
                 val_acc = arch['imagenet16_val_acc']
                 test_acc = arch['imagenet16_test_acc']
                 rank = arch['imagenet16_rank']
                 
-                network_data['imagenet16'] = [arch_feature[net_type], val_acc, test_acc, params, flops, rank]
+                network_data['imagenet16'] = (arch_feature[net_type], val_acc, test_acc, params, flops, rank)
             else:
                 val_acc = arch['cifar100_val_acc']
                 test_acc = arch['cifar100_test_acc']
                 rank = arch['cifar100_rank']
 
-                network_data['cifar100'] = [arch_feature[net_type], val_acc, test_acc, params, flops, rank]
+                network_data['cifar100'] = (arch_feature[net_type], val_acc, test_acc, params, flops, rank)
 
         return network_data
 
