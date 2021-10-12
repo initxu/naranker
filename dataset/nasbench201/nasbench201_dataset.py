@@ -21,8 +21,7 @@ class NASBench201Dataset(Dataset):
     def __getitem__(self, index):
         arch_id = self.keys_list[self.index_list[index]]
         arch = self.database.query_by_id(arch_id)
-        
-        arch_feature = feature_tensor_encoding_201(copy.deepcopy(arch))
+        arch_feature, edges_type_counts = feature_tensor_encoding_201(copy.deepcopy(arch))
 
         network_data = {}
         for net_type in ['cifar10-valid', 'cifar100', 'ImageNet16-120']:
@@ -35,19 +34,19 @@ class NASBench201Dataset(Dataset):
                 test_acc = arch['cifar10_test_acc']
                 rank = arch['cifar10_rank']
 
-                network_data['cifar10'] = (arch_feature[net_type], val_acc, test_acc, params, flops, rank)
+                network_data['cifar10'] = (arch_feature[net_type], val_acc, test_acc, params, flops, edges_type_counts, rank)
             elif net_type == 'ImageNet16-120':
                 val_acc = arch['imagenet16_val_acc']
                 test_acc = arch['imagenet16_test_acc']
                 rank = arch['imagenet16_rank']
                 
-                network_data['imagenet16'] = (arch_feature[net_type], val_acc, test_acc, params, flops, rank)
+                network_data['imagenet16'] = (arch_feature[net_type], val_acc, test_acc, params, flops, edges_type_counts, rank)
             else:
                 val_acc = arch['cifar100_val_acc']
                 test_acc = arch['cifar100_test_acc']
                 rank = arch['cifar100_rank']
 
-                network_data['cifar100'] = (arch_feature[net_type], val_acc, test_acc, params, flops, rank)
+                network_data['cifar100'] = (arch_feature[net_type], val_acc, test_acc, params, flops, edges_type_counts, rank)
 
         return network_data
 
