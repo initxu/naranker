@@ -2,6 +2,12 @@
 Data: 2021/09/15
 Target: Store and Update tier Embedding
 Method: element-wise add all the embeddings belong to this tier and devided by the number of embeddings for scaling
+Variable: self.counts_dict
+            {
+            'flops':[f1,f2,f3,f4,f5]
+            'params':[p1,p2,p3,p4,p5]
+            'edges':[e1,e2,e,3,e4,e5]
+            } 
 """
 
 import torch
@@ -11,9 +17,10 @@ class Bucket(object):
 
     n_tier = 0  # 类变量，每实例化一个类计数加一
 
-    def __init__(self, flag_tier, name_tier, n_arch_patch=19, d_patch_vec=512):
+    def __init__(self, flag_tier, name_tier, n_arch_patch=19, d_patch_vec=512, space='nasbench'):
         
         assert flag_tier == Bucket.n_tier, "tier flag should be the same with the number of the Bucket instances"
+        self.space = space
         self.flag_tier = flag_tier
         self.name_tier = name_tier
         self._n_arch_patch = n_arch_patch
@@ -52,10 +59,14 @@ class Bucket(object):
 
         assert self.current_bucket_emb.size(0) == 1, "The length of bucket emb dimension should be 1"
 
-    def update_counts_dict(self, params, flops, n_nodes):
+    def update_counts_dict(self, params, flops, y):
         self.counts_dict['params'] = params
         self.counts_dict['flops'] = flops
-        self.counts_dict['n_nodes'] = n_nodes
+        
+        if self.space == 'nasbench':
+            self.counts_dict['n_nodes'] = y
+        if self.space == 'nasbench201':
+            self.counts_dict['edges'] = y
 
     @property
     def emb_count(self):            # emb_count不允许外界改变, 仅能通过调用此getter获得数值，方法：instance_name.emb_count
@@ -94,8 +105,11 @@ if __name__ == '__main__':
     # """
 
     # for function and instantiate debug
-    t = Bucket(0,'tier1',19,512)
+    t = Bucket(0,'tier1',19,512,'nasbench201')
     emb = torch.randn(40,19,512).cuda()
     t.updata_bucket_emb(emb)
     t2 = t.get_bucket_emb()
+    d = {0: 5.5192, 1: -0.9014, 2: 1.4695, 3: 3.952, 4: -0.9900}
+    t.update_counts_dict(d,d,d)
+    import pdb;pdb.set_trace()
     print(t2.grad)

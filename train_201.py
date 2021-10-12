@@ -8,27 +8,27 @@ import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
 
 from dataset import NASBench201DataBase, NASBench201Dataset, SplitSubet
-from architecture import Bucket     # 改动
+from architecture import Bucket
 from ranker import Transformer
-from sampler import ArchSampler     # 改动
+from sampler import ArchSampler201
 from utils.loss_ops import CrossEntropyLossSoft
 from utils.optim import LRScheduler
 from utils.metric import AverageMeter
 from utils.setup import setup_seed, setup_logger
 from utils.config import get_config
 from utils.saver import save_checkpoint
-from process import train_epoch, validate, evaluate_sampled_batch
+from process import train_epoch_201, validate_201, evaluate_sampled_batch
 from process.train_utils import init_tier_list
 
 
 def get_args():
     parser = argparse.ArgumentParser(description='NAR Training')
     parser.add_argument('--config_file',
-                        default='./config201.yml',
+                        default='./config/config201.yml',
                         type=str,
                         help='training configuration')
     parser.add_argument('--data_path',
-                        default='./data/nasbench201/nasbench201_with_edge_flops_and_params.json',
+                        default='./data/nasbench201/target.json',
                         type=str,
                         help='Path to load data')
     parser.add_argument('--save_dir',
@@ -130,7 +130,7 @@ def main():
     logger.info('Building optimizer and lr_scheduler')
     optimizer = optim.AdamW(
         ranker.parameters(),
-        betas=(args.optimizer.beta1,args.optimizer.beta2),
+        betas=(args.optimizer.beta1, args.optimizer.beta2),
         eps=args.optimizer.eps,
         weight_decay=args.optimizer.weight_decay)
     
@@ -145,24 +145,24 @@ def main():
     top_tier=args.sampler.top_tier,
     last_tier= args.sampler.last_tier,
     batch_factor=args.sampler.batch_factor,
-    node_type_dict=dict(args.node_type_dict),
-    max_edges=args.max_edges,
     reuse_step=args.sampler.reuse_step,
     )
 
+    assert args.network_type in ['cifar10','cifar100','imagenet16'], 'network type should be one of the [cifar10, cifar100, imagenet16]'
+    
     best_acc = 0
     is_best = False
     # train ranker
     for epoch in range(args.start_epochs, args.ranker_epochs):
         flag = 'Ranker Train'
-        train_acc, train_loss, distri_list = train_epoch(ranker, train_dataloader, criterion, optimizer, lr_scheduler, device, args, logger, tb_writer, epoch, flag)
+        train_acc, train_loss, distri_list = train_epoch_201(ranker, train_dataloader, criterion, optimizer, lr_scheduler, device, args, logger, tb_writer, epoch, flag)
         tb_writer.add_scalar('{}/epoch_accuracy'.format(flag), train_acc, epoch)
         tb_writer.add_scalar('{}/epoch_loss'.format(flag), train_loss, epoch)
 
         # if (epoch+1) % args.validate_freq == 0:
         with torch.no_grad():
             flag = 'Ranker Validate'
-            val_acc, val_loss = validate(ranker, val_dataloader, criterion, device, args, logger, epoch, flag)
+            val_acc, val_loss = validate_201(ranker, val_dataloader, criterion, device, args, logger, epoch, flag)
             tb_writer.add_scalar('{}/epoch_accuracy'.format(flag), val_acc, epoch)
             tb_writer.add_scalar('{}/epoch_loss'.format(flag), val_loss, epoch)
 

@@ -7,7 +7,7 @@ from utils.metric import AverageMeter, compute_accuracy
 
 from .train_utils import *
 
-def train_epoch(model, train_dataloader, criterion, optimizer, lr_scheduler,
+def train_epoch_201(model, train_dataloader, criterion, optimizer, lr_scheduler,
                 device, args, logger, writter, epoch, flag):
 
     epoch_start = time.time()
@@ -28,18 +28,18 @@ def train_epoch(model, train_dataloader, criterion, optimizer, lr_scheduler,
         batch_start = time.time()
         total_iter = epoch * len(train_dataloader) + it
         
-        arch_feature, val_acc, test_acc, params, flops, n_nodes, rank = batch
+        (arch_feature, val_acc, test_acc, params, flops, edges_type_counts, rank) = batch[args.network_type]
         arch_feature = arch_feature.float().cuda(device)
         val_acc = val_acc.float().cuda(device)
         params = params.float().cuda(device)
         flops = flops.float().cuda(device)
-        n_nodes = n_nodes.float().cuda(device)
+        edges_type_counts = edges_type_counts.float().cuda(device)
 
         assert args.strategy in ['multi_obj', 'val_acc'], 'Wrong strategy'
         if args.strategy == 'multi_obj':
             score = val_acc / (params * flops + 1e-9)  # shape = [batchsize]
         if args.strategy == 'val_acc':
-            score  = val_acc
+            score = val_acc
 
         target = get_target(score, args.ranker.n_tier, args.batch_size)
         target = target.cuda(device)
@@ -61,7 +61,7 @@ def train_epoch(model, train_dataloader, criterion, optimizer, lr_scheduler,
         optimizer.step()
 
         classify_tier_emb_by_target(total_embedding_list, tier_list, target)
-        classify_tier_counts_by_target(params, flops, n_nodes, tier_list, target, args.bins)
+        classify_tier_counts_by_target_201(params, flops, edges_type_counts, tier_list, target, args.bins)
         batch_statics_dict = get_batch_statics(tier_list)
         distri_list.append(batch_statics_dict)
         
@@ -89,7 +89,7 @@ def train_epoch(model, train_dataloader, criterion, optimizer, lr_scheduler,
     
     return batch_acc.avg, batch_loss.avg, distri_list
 
-def validate(model, val_dataloader, criterion, device, args, logger, epoch, flag):
+def validate_201(model, val_dataloader, criterion, device, args, logger, epoch, flag):
     epoch_start = time.time()
 
     total_iter = len(val_dataloader)-1
@@ -99,23 +99,23 @@ def validate(model, val_dataloader, criterion, device, args, logger, epoch, flag
     batch_acc = AverageMeter()
 
     model.eval()
+    import pdb;pdb.set_trace()
     assert Bucket.get_n_tier()==0, 'Bucket counts should be reset to 0'
     tier_list = init_tier_list(args)
     for it, batch in enumerate(val_dataloader):
         batch_start = time.time()
-        
-        arch_feature, val_acc, test_acc, params, flops, n_nodes, rank = batch
+        (arch_feature, val_acc, test_acc, params, flops, edges_type_counts, rank) = batch[args.network_type]
         arch_feature = arch_feature.float().cuda(device)
         val_acc = val_acc.float().cuda(device)
         params = params.float().cuda(device)
         flops = flops.float().cuda(device)
-        n_nodes = n_nodes.float().cuda(device)
+        edges_type_counts = edges_type_counts.float().cuda(device)
 
         assert args.strategy in ['multi_obj', 'val_acc'], 'Wrong strategy'
         if args.strategy == 'multi_obj':
             score = val_acc / (params * flops + 1e-9)  # 假设shape = [batch]
         if args.strategy == 'val_acc':
-            score  = val_acc
+            score = val_acc
 
         target = get_target(score, args.ranker.n_tier, args.batch_size)
         target = target.cuda(device)

@@ -1,9 +1,11 @@
 import torch
 
 from architecture import Bucket
-from sampler.prob_calculate import build_counts_dict, build_n_nodes_counts_dict, compute_kl_div, extract_dict_value_to_list
+from sampler.prob_calculate import *
 
 def get_target(score, n_tier, batch_sz):
+    assert batch_sz>= n_tier, 'batch_sz should be larger than n_tier'
+
     _, idx = score.sort(descending=True)
     step = int(batch_sz / n_tier)
     t_flag = []
@@ -28,7 +30,8 @@ def init_tier_list(args):
         t = Bucket(flag_tier=i,
                    name_tier='tier_{}'.format(i + 1),
                    n_arch_patch=args.ranker.n_arch_patch,
-                   d_patch_vec=args.ranker.d_patch_vec)
+                   d_patch_vec=args.ranker.d_patch_vec,
+                   space=args.space)
         tier_list.append(t)
 
     return tier_list
@@ -93,17 +96,39 @@ def classify_tier_counts_by_pred(params, flops, n_nodes, tier_list, pred, bins):
         n_counts = build_n_nodes_counts_dict(n_nodes[idx].tolist(), batch_min=int(min_n), batch_max=int(max_n))
         tier_list[i].update_counts_dict(p_counts,f_counts,n_counts)
 
+
+def classify_tier_counts_by_target_201(params, flops, edges, tier_list, target, bins):
+    params = torch.ceil(params/1e3)
+    max_p, min_p = max(params), min(params)
+    
+    flops = torch.ceil(flops/1e6)
+    max_f, min_f = max(flops), min(flops)
+
+    for i in range(len(tier_list)):
+        idx = torch.where(target[:,i] == 1)
+        #{3716836: 0, 7433672: 0, 11150508: 0, 14867344: 0, 18584180: 0, 22301016: 0, 26017852: 0, 29734688: 0}
+        p_counts = build_counts_dict(params[idx].tolist(),batch_min=min_p,batch_max=max_p, bins=bins,scail=1e3) 
+        f_counts = build_counts_dict(flops[idx].tolist(),batch_min=min_f, batch_max=max_f, bins=bins, scail=1e6)
+        edges_counts = build_edges_counts_dict(edges[idx])
+        
+        tier_list[i].update_counts_dict(p_counts, f_counts, edges_counts)
+
 def get_batch_statics(tier_list):
     p_list = []
     f_list = []
-    n_list = []
+    y_list = []
+    
+    if tier_list[0].space == 'nasbench':
+        y_str = 'n_nodes'
+    if tier_list[0].space == 'nasbench201':
+        y_str = 'edges'
     
     for i in range(len(tier_list)):
         tier_counts = tier_list[i].get_bucket_counts()
         p_list.append(tier_counts['params'])
         f_list.append(tier_counts['flops'])
-        n_list.append(tier_counts['n_nodes'])
-    return {'params':p_list, 'flops':f_list, 'n_nodes':n_list}
+        y_list.append(tier_counts[y_str])
+    return {'params':p_list, 'flops':f_list, y_str:y_list}
 
 def compare_kl_div(batch_statics:list):
     t1 = batch_statics[0]

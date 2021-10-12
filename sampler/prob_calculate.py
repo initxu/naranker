@@ -63,6 +63,16 @@ def build_n_nodes_counts_dict(raw_list, batch_min, batch_max):
 
     return counts_dict
 
+def build_edges_counts_dict(raw_list):
+    l = raw_list.size(1)
+    counts = raw_list.sum(dim=0)
+    
+    counts_dict = {}
+    for i in range(l):
+        counts_dict[i] = counts[i]
+    
+    return counts_dict
+
 def extract_dict_value_to_list(target_dict, is_key=False):
     assert type(target_dict) == dict, 'Not a dictionary'
     if is_key:
