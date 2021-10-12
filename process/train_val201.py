@@ -99,7 +99,7 @@ def validate_201(model, val_dataloader, criterion, device, args, logger, epoch, 
     batch_acc = AverageMeter()
 
     model.eval()
-    import pdb;pdb.set_trace()
+
     assert Bucket.get_n_tier()==0, 'Bucket counts should be reset to 0'
     tier_list = init_tier_list(args)
     for it, batch in enumerate(val_dataloader):
