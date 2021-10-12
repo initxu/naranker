@@ -35,17 +35,11 @@ def sample_helper(disti_dict):
 
 
 class ArchSampler201(object):
-    def __init__(self,
-                 top_tier,
-                 last_tier,
-                 batch_factor,
-                 node_type_dict,
-                 reuse_step=None):
+    def __init__(self, top_tier, last_tier, batch_factor, reuse_step=None):
 
         self.top_tier = top_tier
         self.last_tier = last_tier
         self.batch_factor = batch_factor
-        # self.node_type_dict = node_type_dict
         self.reuse_step = reuse_step
 
     def reset_parameters(self, batch_statics_dict):
