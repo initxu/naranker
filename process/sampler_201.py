@@ -58,8 +58,8 @@ def evaluate_sampled_batch(model, sampler : ArchSampler, tier_list, batch_static
         output, total_embedding_list = model(arch_feature, tier_feature)
         prob = F.softmax(output, dim=1)
 
-        classify_tier_emb_by_pred(total_embedding_list, tier_list, prob)
-        classify_tier_counts_by_pred(params, flops, n_nodes, tier_list, prob, args.bins)
+        classify_tier_emb_by_pred(total_embedding_list, tier_list, output)
+        classify_tier_counts_by_pred(params, flops, n_nodes, tier_list, output, args.bins)
 
         # find best pred arch
         val, index = torch.topk(prob, k=1, dim=1)
