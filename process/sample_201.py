@@ -29,7 +29,6 @@ def evaluate_sampled_batch_201(model, sampler : ArchSampler201, tier_list, batch
         network_type = 'ImageNet16-120'
     assert network_type, 'network type is None'
     
-    
     # sample from entire dataset
     sampled_arch_datast_idx = sampler.sample_arch(batch_statics_dict, sample_size, dataset, network_type, kl_thred, args.sampler.max_trails, args.sampler.force_uniform)
     sampled_arch_datast_idx = [v for _, v in enumerate(sampled_arch_datast_idx) if v != None]
@@ -81,40 +80,47 @@ def evaluate_sampled_batch_201(model, sampler : ArchSampler201, tier_list, batch
         t1_test_acc = test_acc[idx]
         t1_rank = rank[idx]
 
-        tpk5_prob, tpk5_idx = torch.topk(t1_prob, k=5)
-        tpk5_rank = t1_rank[tpk5_idx]
-        tpk5_test_acc = t1_test_acc[tpk5_idx]
-        tpk5_best_rank = min(tpk5_rank)
-        tpk5_best_test_acc = max(tpk5_test_acc)
+        if t1_prob.size(0) >= 5 or t1_test_acc.size(0) >= 5 or t1_rank.size(0) >= 5:
+            tpk5_prob, tpk5_idx = torch.topk(t1_prob, k=5)
+            tpk5_rank = t1_rank[tpk5_idx]
+            tpk5_test_acc = t1_test_acc[tpk5_idx]
+            tpk5_best_rank = min(tpk5_rank)
+            tpk5_best_test_acc = max(tpk5_test_acc)
 
-        tpk1_prob, tpk1_idx = torch.topk(t1_prob, k=1)
-        tpk1_rank = t1_rank[tpk1_idx]
-        tpk1_test_acc = t1_test_acc[tpk1_idx]
+            tpk1_prob, tpk1_idx = torch.topk(t1_prob, k=1)
+            tpk1_rank = t1_rank[tpk1_idx]
+            tpk1_test_acc = t1_test_acc[tpk1_idx]
 
-        results_tpk1.append((tpk1_test_acc.item(), tpk1_rank.item()))
-        results_tpk5.append((tpk5_best_test_acc.item(), tpk5_best_rank.item()))
+            results_tpk1.append((tpk1_test_acc.item(), tpk1_rank.item()))
+            results_tpk5.append((tpk5_best_test_acc.item(), tpk5_best_rank.item()))
         
-    (best_acc_at1, best_rank_at1) = sorted(results_tpk1, key=lambda item:item[0], reverse=True)[0]
-    (best_acc_at5, best_rank_at5) = sorted(results_tpk5, key=lambda item:item[0], reverse=True)[0]
+    if len(results_tpk1) != 0 or len(results_tpk5) != 0:
+        (best_acc_at1, best_rank_at1) = sorted(results_tpk1, key=lambda item:item[0], reverse=True)[0]
+        (best_acc_at5, best_rank_at5) = sorted(results_tpk5, key=lambda item:item[0], reverse=True)[0]
 
-    best_rank_percentage_at1 = best_rank_at1/len(dataset)
-    best_rank_percentage_at5 = best_rank_at5/len(dataset)
+        best_rank_percentage_at1 = best_rank_at1/len(dataset)
+        best_rank_percentage_at5 = best_rank_at5/len(dataset)
 
 
-    sample_time = time.time() - sample_start
-    # logger.info('[{}][iter:{:2d}] Time: {:.2f} Test Acc@top1: {:.8f} Rank: {:5d}(top{:6.2%})'.format(
-    #         flag, it-args.ranker_epochs,
-    #         sample_time,
-    #         best_acc_at1,  
-    #         best_rank_at1,
-    #         best_rank_percentage_at1))
-    logger.info('[{}][iter:{:2d}] Time: {:.2f} Test Acc@top5: {:.8f} Rank: {:5d}(top {:6.2%})'.format(
-            flag, it-args.ranker_epochs,
-            sample_time,
-            best_acc_at5,
-            best_rank_at5,
-            best_rank_percentage_at5))
+        sample_time = time.time() - sample_start
+        # logger.info('[{}][iter:{:2d}] Time: {:.2f} Test Acc@top1: {:.8f} Rank: {:5d}(top{:6.2%})'.format(
+        #         flag, it-args.ranker_epochs,
+        #         sample_time,
+        #         best_acc_at1,  
+        #         best_rank_at1,
+        #         best_rank_percentage_at1))
+        logger.info('[{}][iter:{:2d}] Time: {:.2f} Test Acc@top5: {:.8f} Rank: {:5d}(top {:6.2%})'.format(
+                flag, it-args.ranker_epochs,
+                sample_time,
+                best_acc_at5,
+                best_rank_at5,
+                best_rank_percentage_at5))
 
-    batch_statics_dict = get_batch_statics(tier_list)
+        batch_statics_dict = get_batch_statics(tier_list)
 
-    return batch_statics_dict, best_acc_at1, best_rank_at1, best_acc_at5, best_rank_at5
+        return batch_statics_dict, best_acc_at1, best_rank_at1, best_acc_at5, best_rank_at5
+
+    else:
+        logger.info('[{}][iter:{:2d}] No qulalifed arch'.format(flag, it-args.ranker_epochs))
+        
+        return None, None, None, None, None

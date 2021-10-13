@@ -1,12 +1,12 @@
 arch: "NAR"
 
-exp_name: "201_debug"
+exp_name: "201_debug_fullmodel"
 seed: 20211117
 
 is_cuda: True
 
 space: "nasbench201"
-network_type: "cifar10"
+network_type: "cifar100"
 
 train_size: 1000
 val_size: 250
@@ -15,26 +15,26 @@ data_loader_workers: 6
 batch_size: 64
 
 start_epochs: 0
-ranker_epochs: 50
+ranker_epochs: 60
 sampler_epochs: 100
 validate_freq: 1
 
 strategy: "val_acc"
 
-bins: 8
+bins: 5
 
 ranker:
   n_tier: 5
   n_arch_patch: 31
   d_patch: 4
-  d_patch_vec: 128
-  d_model: 128
-  d_ffn_inner: 1024
+  d_patch_vec: 256
+  d_model: 256
+  d_ffn_inner: 2048
   d_tier_prj_inner: 512
-  n_layers: 4
+  n_layers: 6
   n_head: 4
-  d_k: 32
-  d_v: 32
+  d_k: 64
+  d_v: 64
   dropout: 0.1
   n_position: 200
   scale_prj: True
@@ -46,8 +46,8 @@ optimizer:
   weight_decay: 1.0e-2 # AdamW默认是1e-2, 这是因为直接将L2正则加在了二阶动量上，可以尝试默认值, tranfomer复现代码是5.0e-4
 
 lr_scheduler:
-  lr_mul: 0.0001
-  n_warmup_steps: 30
+  lr_mul: 0.05
+  n_warmup_steps: 300
 
 sampler:
   top_tier: 1
@@ -56,10 +56,10 @@ sampler:
   reuse_step: 25 # for 25 batch 128, 12 for batch 64
   max_trails: 100
   noisy_factor: 0.1
-  flops_kl_thred: 2.5
-  params_kl_thred: 2.5
-  edges_kl_thred: 2
+  flops_kl_thred: 0.35
+  params_kl_thred: 0.3
+  edges_kl_thred: 1.5
   sample_size: 64
   search_size: 64
-  force_uniform: False    # for params and flops sample, n_nodes are always uniform
+  force_uniform: True    # for params and flops sample, n_nodes are always uniform
   is_checkpoint: True

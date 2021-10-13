@@ -202,9 +202,8 @@ def main():
     random.shuffle(distri_list)
     distri_length = len(distri_list)
     distri_reuse_step = math.ceil((args.sampler_epochs-args.ranker_epochs)/distri_length)
+    flag = args.network_type + ' Sample'
     for it in range(args.ranker_epochs, args.sampler_epochs):
-        flag = args.network_type + ' Sample'
-        
         with torch.no_grad():
             if (it-args.ranker_epochs)%distri_reuse_step==0:
                 history_best_distri = distri_list[(it-args.ranker_epochs)//distri_reuse_step]
@@ -212,8 +211,9 @@ def main():
             batch_statics_dict, best_acc_at1, best_rank_at1, best_acc_at5, best_rank_at5 = evaluate_sampled_batch_201(ranker, sampler, tier_list, history_best_distri, dataset, it, args, device, tb_writer, logger, flag)
             # tpk1_meter.update(best_acc_at1, n=1)
             # tpk1_list.append((it-args.ranker_epochs, best_acc_at1, best_rank_at1))
-            tpk5_meter.update(best_acc_at5, n=1)
-            tpk5_list.append((it-args.ranker_epochs, best_acc_at5, best_rank_at5))
+            if best_acc_at5 != None:
+                tpk5_meter.update(best_acc_at5, n=1)
+                tpk5_list.append((it-args.ranker_epochs, best_acc_at5, best_rank_at5))
                 
     # tpk1_best = sorted(tpk1_list, key=lambda item:item[1], reverse=True)[0]
     # logger.info('[Result] Top1 Best Arch in Iter {:2d}: Test Acc {:.8f} Rank: {:5d}(top{:.2%}), Avg Test Acc {:.8f}'.format(
