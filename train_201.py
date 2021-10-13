@@ -17,7 +17,7 @@ from utils.metric import AverageMeter
 from utils.setup import setup_seed, setup_logger
 from utils.config import get_config
 from utils.saver import save_checkpoint
-from process import train_epoch_201, validate_201, evaluate_sampled_batch
+from process import train_epoch_201, validate_201, evaluate_sampled_batch_201
 from process.train_utils import init_tier_list
 
 
@@ -28,7 +28,7 @@ def get_args():
                         type=str,
                         help='training configuration')
     parser.add_argument('--data_path',
-                        default='./data/nasbench201/target.json',
+                        default='./data/nasbench201/nasbench201_with_edge_flops_and_params.json',
                         type=str,
                         help='Path to load data')
     parser.add_argument('--save_dir',
@@ -154,14 +154,14 @@ def main():
     is_best = False
     # train ranker
     for epoch in range(args.start_epochs, args.ranker_epochs):
-        flag = 'Ranker Train'
+        flag = args.network_type + ' Ranker Train'
         train_acc, train_loss, distri_list = train_epoch_201(ranker, train_dataloader, criterion, optimizer, lr_scheduler, device, args, logger, tb_writer, epoch, flag)
         tb_writer.add_scalar('{}/epoch_accuracy'.format(flag), train_acc, epoch)
         tb_writer.add_scalar('{}/epoch_loss'.format(flag), train_loss, epoch)
 
         # if (epoch+1) % args.validate_freq == 0:
         with torch.no_grad():
-            flag = 'Ranker Validate'
+            flag = args.network_type + ' Ranker Validate'
             val_acc, val_loss = validate_201(ranker, val_dataloader, criterion, device, args, logger, epoch, flag)
             tb_writer.add_scalar('{}/epoch_accuracy'.format(flag), val_acc, epoch)
             tb_writer.add_scalar('{}/epoch_loss'.format(flag), val_loss, epoch)
@@ -173,7 +173,7 @@ def main():
         else:
             is_best = False
         save_checkpoint(args.save_path, ranker, optimizer, lr_scheduler, args, epoch, distri_list, is_best)
-        
+    
     # sample
     assert args.sampler_epochs > args.ranker_epochs, 'sampler_epochs should be larger than ranker_epochs'
     assert Bucket.get_n_tier()==0, 'Bucket counts should be reset to 0'
@@ -203,13 +203,13 @@ def main():
     distri_length = len(distri_list)
     distri_reuse_step = math.ceil((args.sampler_epochs-args.ranker_epochs)/distri_length)
     for it in range(args.ranker_epochs, args.sampler_epochs):
-        flag = 'Sample'
+        flag = args.network_type + ' Sample'
         
         with torch.no_grad():
             if (it-args.ranker_epochs)%distri_reuse_step==0:
                 history_best_distri = distri_list[(it-args.ranker_epochs)//distri_reuse_step]
 
-            batch_statics_dict, best_acc_at1, best_rank_at1, best_acc_at5, best_rank_at5 = evaluate_sampled_batch(ranker, sampler, tier_list, history_best_distri, dataset, it, args, device, tb_writer, logger, flag)
+            batch_statics_dict, best_acc_at1, best_rank_at1, best_acc_at5, best_rank_at5 = evaluate_sampled_batch_201(ranker, sampler, tier_list, history_best_distri, dataset, it, args, device, tb_writer, logger, flag)
             # tpk1_meter.update(best_acc_at1, n=1)
             # tpk1_list.append((it-args.ranker_epochs, best_acc_at1, best_rank_at1))
             tpk5_meter.update(best_acc_at5, n=1)

@@ -113,6 +113,24 @@ def classify_tier_counts_by_target_201(params, flops, edges, tier_list, target, 
         
         tier_list[i].update_counts_dict(p_counts, f_counts, edges_counts)
 
+def classify_tier_counts_by_pred_201(params, flops, edges, tier_list, pred, bins):
+    params = torch.ceil(params/1e3)
+    max_p, min_p = max(params), min(params)
+    
+    flops = torch.ceil(flops/1e6)
+    max_f, min_f = max(flops), min(flops)
+
+    _, index = torch.topk(pred, k=1, dim=1)
+    index = index.squeeze(dim=1)
+    for i in range(len(tier_list)):
+        idx = torch.where(index == i)
+        #{3716836: 0, 7433672: 0, 11150508: 0, 14867344: 0, 18584180: 0, 22301016: 0, 26017852: 0, 29734688: 0}
+        p_counts = build_counts_dict(params[idx].tolist(),batch_min=min_p,batch_max=max_p, bins=bins,scail=1e3) 
+        f_counts = build_counts_dict(flops[idx].tolist(),batch_min=min_f, batch_max=max_f, bins=bins, scail=1e6)
+        edges_counts = build_edges_counts_dict(edges[idx])
+        
+        tier_list[i].update_counts_dict(p_counts, f_counts, edges_counts)
+
 def get_batch_statics(tier_list):
     p_list = []
     f_list = []

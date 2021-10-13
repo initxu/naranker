@@ -69,7 +69,7 @@ def build_edges_counts_dict(raw_list):
     
     counts_dict = {}
     for i in range(l):
-        counts_dict[i] = counts[i]
+        counts_dict[i] = counts[i].item()
     
     return counts_dict
 

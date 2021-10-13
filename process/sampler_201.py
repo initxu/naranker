@@ -4,23 +4,34 @@ import random
 import torch.utils.data
 import torch.nn.functional as F
 
-from dataset import NASBenchDataset, SplitSubet
-from sampler import ArchSampler
+from dataset import NASBench201Dataset, SplitSubet
+from sampler import ArchSampler201
 
 from .train_utils import *
 
-def evaluate_sampled_batch(model, sampler : ArchSampler, tier_list, batch_statics_dict, dataset : NASBenchDataset, it, args, device, writer, logger, flag):
+def evaluate_sampled_batch_201(model, sampler : ArchSampler201, tier_list, batch_statics_dict, dataset : NASBench201Dataset, it, args, device, writer, logger, flag):
 
     sample_start = time.time()
 
     sample_size = int(args.sampler.sample_size * (1 - args.sampler.noisy_factor))
     kl_thred = [
         args.sampler.flops_kl_thred, 
-        args.sampler.params_kl_thred
+        args.sampler.params_kl_thred,
+        args.sampler.edges_kl_thred
     ]
-
+    
+    network_type = None
+    if args.network_type == 'cifar10':
+        network_type = 'cifar10-valid'
+    if args.network_type == 'cifar100':
+        network_type = 'cifar100'
+    if args.network_type == 'imagenet16':
+        network_type = 'ImageNet16-120'
+    assert network_type, 'network type is None'
+    
+    
     # sample from entire dataset
-    sampled_arch, sampled_arch_datast_idx = sampler.sample_arch(batch_statics_dict, sample_size, dataset, kl_thred, args.sampler.max_trails, args.sampler.force_uniform)
+    sampled_arch_datast_idx = sampler.sample_arch(batch_statics_dict, sample_size, dataset, network_type, kl_thred, args.sampler.max_trails, args.sampler.force_uniform)
     sampled_arch_datast_idx = [v for _, v in enumerate(sampled_arch_datast_idx) if v != None]
     if writer:
         writer.add_scalar('{}/number_sampled_archs'.format(flag), len(sampled_arch_datast_idx), it)
@@ -46,11 +57,11 @@ def evaluate_sampled_batch(model, sampler : ArchSampler, tier_list, batch_static
     results_tpk5 = []
     for _, batch in enumerate(sampled_dataloader):
         
-        arch_feature, val_acc, test_acc, params, flops, n_nodes, rank = batch
+        (arch_feature, val_acc, test_acc, params, flops, edges_type_counts, rank) = batch[args.network_type]
         arch_feature = arch_feature.float().cuda(device)
         params = params.float().cuda(device)
         flops = flops.float().cuda(device)
-        n_nodes = n_nodes.float().cuda(device)
+        edges_type_counts = edges_type_counts.float().cuda(device)
 
         tier_feature = get_tier_emb(tier_list, device)
         assert not (torch.any(torch.isnan(tier_feature)) or torch.any(torch.isinf(tier_feature))), 'tier feature is nan or inf'
@@ -58,8 +69,8 @@ def evaluate_sampled_batch(model, sampler : ArchSampler, tier_list, batch_static
         output, total_embedding_list = model(arch_feature, tier_feature)
         prob = F.softmax(output, dim=1)
 
-        classify_tier_emb_by_pred(total_embedding_list, tier_list, output)
-        classify_tier_counts_by_pred(params, flops, n_nodes, tier_list, output, args.bins)
+        classify_tier_emb_by_pred(total_embedding_list, tier_list, prob)
+        classify_tier_counts_by_pred_201(params, flops, edges_type_counts, tier_list, prob, args.bins)
 
         # find best pred arch
         val, index = torch.topk(prob, k=1, dim=1)
