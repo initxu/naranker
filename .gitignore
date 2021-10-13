@@ -134,5 +134,7 @@ data
 
 # Test and debug
 debug.py
-# events.out.tfevents*
+
+# save files and log
 output/
+*.out
