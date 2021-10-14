@@ -7,7 +7,7 @@ seed: 20211117
 is_cuda: True
 
 space: "nasbench201"
-network_type: "cifar100"
+network_type: "cifar10"  # ['cifar10','cifar100','imagenet16']
 
 train_size: 1000
 val_size: 250
