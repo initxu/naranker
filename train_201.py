@@ -90,7 +90,7 @@ def main():
     # build dataloader
     train_dataloader = torch.utils.data.DataLoader(
         trainset,
-        batch_size=args.batch_size,
+        batch_size=args.train_batch_size,
         shuffle=True,
         drop_last=getattr(args, 'drop_last', True),
         num_workers=args.data_loader_workers,
@@ -98,7 +98,7 @@ def main():
 
     val_dataloader = torch.utils.data.DataLoader(
         valset,
-        batch_size=args.batch_size,
+        batch_size=args.val_batch_size,
         shuffle=False,
         drop_last=True,
         num_workers=args.data_loader_workers,

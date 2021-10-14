@@ -1,6 +1,7 @@
 arch: "NAR"
 
-exp_name: "prj4096_din512_lr007_dm128_4head"
+# exp_name: "wp30_bz128_lin256_din512_lr007_dm128_4head"
+exp_name: "debug"
 seed: 20211117
 
 is_cuda: True
@@ -12,12 +13,13 @@ train_size: 1000
 val_size: 250
 drop_last: True
 data_loader_workers: 6
-batch_size: 64
+train_batch_size: 128
+val_batch_size: 128
 
 start_epochs: 0
-ranker_epochs: 100
-sampler_epochs: 72
-validate_freq: 2
+ranker_epochs: 70
+sampler_epochs: 90
+validate_freq: 5
 
 strategy: "val_acc"
 
@@ -30,7 +32,7 @@ ranker:
   d_patch_vec: 128
   d_model: 128
   d_ffn_inner: 512
-  d_tier_prj_inner: 512
+  d_tier_prj_inner: 256
   n_layers: 6
   n_head: 4
   d_k: 32
@@ -47,7 +49,7 @@ optimizer:
 
 lr_scheduler:
   lr_mul: 0.07
-  n_warmup_steps: 300
+  n_warmup_steps: 30
 
 sampler:
   top_tier: 1
@@ -59,7 +61,7 @@ sampler:
   flops_kl_thred: 0.35
   params_kl_thred: 0.3
   edges_kl_thred: 1.5
-  sample_size: 64
-  search_size: 64
+  sample_size: 128
+  search_size: 128
   force_uniform: True    # for params and flops sample, n_nodes are always uniform
   is_checkpoint: True
