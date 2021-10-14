@@ -41,7 +41,7 @@ def train_epoch_201(model, train_dataloader, criterion, optimizer, lr_scheduler,
         if args.strategy == 'val_acc':
             score = val_acc
 
-        target = get_target(score, args.ranker.n_tier, args.batch_size)
+        target = get_target(score, args.ranker.n_tier, args.train_batch_size)
         target = target.cuda(device)
 
         tier_feature = get_tier_emb(tier_list, device)
@@ -117,7 +117,7 @@ def validate_201(model, val_dataloader, criterion, device, args, logger, epoch, 
         if args.strategy == 'val_acc':
             score = val_acc
 
-        target = get_target(score, args.ranker.n_tier, args.batch_size)
+        target = get_target(score, args.ranker.n_tier, args.val_batch_size)
         target = target.cuda(device)
 
         tier_feature = get_tier_emb(tier_list, device)
