@@ -83,7 +83,7 @@ class Transformer(nn.Module):
 
     def __init__(
             self, n_tier=5, n_arch_patch=19, d_patch=7,
-            d_patch_vec=512, d_model=512, d_ffn_inner=2048, d_tier_prj_inner=4096,
+            d_patch_vec=512, d_model=512, d_ffn_inner=2048, d_tier_prj_inner=256,
             n_layers=6, n_head=8, d_k=64, d_v=64, dropout=0.1, n_position=200,
             scale_prj=True):
 
@@ -108,6 +108,7 @@ class Transformer(nn.Module):
 
         self.tier_prj = nn.Sequential(
             nn.Linear(n_arch_patch * d_model, d_tier_prj_inner, bias=False),
+            nn.ReLU(),
             nn.Linear(d_tier_prj_inner, n_tier)
             )
 
