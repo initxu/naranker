@@ -11,7 +11,7 @@ from dataset import NASBenchDataBase, NASBenchDataset, SplitSubet
 from architecture import Bucket
 from ranker import Transformer
 from sampler import ArchSampler
-from utils.loss_ops import CrossEntropyLossSoft
+from utils.loss_ops import CrossEntropyLossSoft, GlobalClassDistanceRegularization, TopRankRegularization
 from utils.optim import LRScheduler
 from utils.metric import AverageMeter
 from utils.setup import setup_seed, setup_logger
@@ -22,13 +22,13 @@ from process.train_utils import init_tier_list
 
 
 def get_args():
-    parser = argparse.ArgumentParser(description='NAR Training')
+    parser = argparse.ArgumentParser(description='NAR Training for nasbench101')
     parser.add_argument('--config_file',
-                        default='./config.yml',
+                        default='./config/config.yml',
                         type=str,
                         help='training configuration')
     parser.add_argument('--data_path',
-                        default='./data/nasbench101/nasbench_only108_with_vertex_flops_and_params_42362.json',
+                        default='./data/nasbench101/nasbench_only108_with_vertex_flops_and_params.json',
                         type=str,
                         help='Path to load data')
     parser.add_argument('--save_dir',
@@ -106,6 +106,8 @@ def main():
 
     # build loss
     criterion = CrossEntropyLossSoft().cuda(device)
+    rank_reg = GlobalClassDistanceRegularization().cuda(device)
+    top_reg = TopRankRegularization().cuda(device)
 
     # build model
     logger.info('Building model with {}'.format(args.ranker))
@@ -155,7 +157,7 @@ def main():
     # train ranker
     for epoch in range(args.start_epochs, args.ranker_epochs):
         flag = 'Ranker Train'
-        train_acc, train_loss, distri_list = train_epoch(ranker, train_dataloader, criterion, optimizer, lr_scheduler, device, args, logger, tb_writer, epoch, flag)
+        train_acc, train_loss, distri_list = train_epoch(ranker, train_dataloader, criterion, rank_reg, top_reg, optimizer, lr_scheduler, device, args, logger, tb_writer, epoch, flag)
         tb_writer.add_scalar('{}/epoch_accuracy'.format(flag), train_acc, epoch)
         tb_writer.add_scalar('{}/epoch_loss'.format(flag), train_loss, epoch)
 

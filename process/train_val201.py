@@ -54,7 +54,7 @@ def train_epoch_201(model, train_dataloader, criterion, rank_reg, top_reg, optim
         
         rank_reg_term = args.reg.ranking_reg_factor * rank_reg(output, target)
         top_reg_term = args.reg.top_reg_factor * top_reg(output, score)
-        loss = criterion(output, target) + rank_reg_term  + top_reg_term 
+        loss = criterion(output, target) + rank_reg_term  + top_reg_term
         
         writter.add_scalar('{}/iter_loss'.format(flag), loss, total_iter)
         loss.backward()

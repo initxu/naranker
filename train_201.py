@@ -22,7 +22,7 @@ from process.train_utils import init_tier_list
 
 
 def get_args():
-    parser = argparse.ArgumentParser(description='NAR Training')
+    parser = argparse.ArgumentParser(description='NAR Training for nasbench201')
     parser.add_argument('--config_file',
                         default='./config/config201.yml',
                         type=str,
