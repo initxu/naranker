@@ -17,8 +17,8 @@ train_batch_size: 128
 val_batch_size: 128
 
 start_epochs: 0
-ranker_epochs: 70
-sampler_epochs: 90
+ranker_epochs: 120
+sampler_epochs: 30
 validate_freq: 5
 
 strategy: "val_acc"
@@ -50,6 +50,10 @@ optimizer:
 lr_scheduler:
   lr_mul: 0.07
   n_warmup_steps: 30
+
+reg:
+  ranking_reg_factor: 1.0e-3
+  top_reg_factor: 1.0e-3
 
 sampler:
   top_tier: 1
