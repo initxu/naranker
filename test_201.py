@@ -5,30 +5,30 @@ import random
 import argparse
 import torch.utils.data
 
-from dataset import NASBenchDataBase, NASBenchDataset, SplitSubet
+from dataset import NASBench201DataBase, NASBench201Dataset, SplitSubet
 from architecture import Bucket
 from ranker import Transformer
-from sampler import ArchSampler
-from utils.metric import AverageMeter
+from sampler import ArchSampler201
 from utils.loss_ops import CrossEntropyLossSoft
-from utils.config import get_config
+from utils.metric import AverageMeter
 from utils.setup import setup_seed, setup_logger
-from process import validate, evaluate_sampled_batch
+from utils.config import get_config
+from process import validate_201, evaluate_sampled_batch_201
 from process.train_utils import init_tier_list
 
 
 def get_args():
-    parser = argparse.ArgumentParser(description='NAR Testing for nasbench101')
+    parser = argparse.ArgumentParser(description='NAR Testing for nasbench201')
     parser.add_argument('--config_file',
-                        default='./config/config.yml',
+                        default='./config/config201.yml',
                         type=str,
                         help='testing configuration')
     parser.add_argument('--data_path',
-                        default='./data/nasbench101/nasbench_only108_with_vertex_flops_and_params_42362.json',
+                        default='./data/nasbench201/nasbench201_with_edge_flops_and_params.json',
                         type=str,
                         help='Path to load data')
     parser.add_argument('--save_dir',
-                        default='./output/.history/force_uniform_20211005205808',
+                        default='./output/debug_20211015075914',
                         type=str,
                         help='Path to save output')
     parser.add_argument('--checkpoint',
@@ -67,15 +67,15 @@ def main():
         device = torch('cpu')
 
     # build dataset
-    if args.space == 'nasbench':
-        database = NASBenchDataBase(args.data_path)
-        dataset = NASBenchDataset(database, seed=args.seed)
+    if args.space == 'nasbench201':
+        database = NASBench201DataBase(args.data_path)
+        dataset = NASBench201Dataset(database, seed=args.seed)
         valset = SplitSubet(dataset, list(range(args.train_size, args.train_size + args.val_size)))
         
     # build dataloader
     val_dataloader = torch.utils.data.DataLoader(
         valset,
-        batch_size=args.batch_size,
+        batch_size=args.val_batch_size,
         shuffle=False,
         drop_last=True,
         num_workers=args.data_loader_workers,
@@ -103,19 +103,19 @@ def main():
     ranker.load_state_dict(checkpoint['state_dict'])
     ranker.cuda(device)
 
-    sampler = ArchSampler(
+    sampler = ArchSampler201(
     top_tier=args.sampler.top_tier,
     last_tier= args.sampler.last_tier,
     batch_factor=args.sampler.batch_factor,
-    node_type_dict=dict(args.node_type_dict),
-    max_edges=args.max_edges,
     reuse_step=args.sampler.reuse_step,
     )
 
+    assert args.network_type in ['cifar10','cifar100','imagenet16'], 'network type should be one of the [cifar10, cifar100, imagenet16]'
+
     logger.info('Start to use {} file for testing ranker and sampling'.format(ckp_path))
     with torch.no_grad():
-        flag = 'Ranker Test'
-        val_acc, val_loss = validate(ranker, val_dataloader, criterion, device, args, logger, 0, flag)
+        flag = args.network_type + ' Ranker Test'
+        val_acc, val_loss = validate_201(ranker, val_dataloader, criterion, device, args, logger, 0, flag)
 
     # sample
     assert args.sampler_epochs > args.ranker_epochs, 'sampler_epochs should be larger than ranker_epochs'
@@ -132,17 +132,18 @@ def main():
     random.shuffle(distri_list)
     distri_length = len(distri_list)
     distri_reuse_step = math.ceil((args.sampler_epochs-args.ranker_epochs)/distri_length)
-    flag = 'Sample Test'
+    flag = args.network_type + ' Sample Test'
     for it in range(args.ranker_epochs, args.sampler_epochs):
         with torch.no_grad():
             if (it-args.ranker_epochs)%distri_reuse_step==0:
                 history_best_distri = distri_list[(it-args.ranker_epochs)//distri_reuse_step]
 
-            batch_statics_dict, best_acc_at1, best_rank_at1, best_acc_at5, best_rank_at5 = evaluate_sampled_batch(ranker, sampler, tier_list, history_best_distri, dataset, it, args, device, None, logger, flag)
+            batch_statics_dict, best_acc_at1, best_rank_at1, best_acc_at5, best_rank_at5 = evaluate_sampled_batch_201(ranker, sampler, tier_list, history_best_distri, dataset, it, args, device, None, logger, flag)
             # tpk1_meter.update(best_acc_at1, n=1)
             # tpk1_list.append((it-args.ranker_epochs, best_acc_at1, best_rank_at1))
-            tpk5_meter.update(best_acc_at5, n=1)
-            tpk5_list.append((it-args.ranker_epochs, best_acc_at5, best_rank_at5))
+            if best_acc_at5 != None:
+                tpk5_meter.update(best_acc_at5, n=1)
+                tpk5_list.append((it-args.ranker_epochs, best_acc_at5, best_rank_at5))
     
     # tpk1_best = sorted(tpk1_list, key=lambda item:item[1], reverse=True)[0]
     # logger.info('[Result] Top1 Best Arch in Iter {:2d}: Test Acc {:.8f} Rank: {:5d}(top{:.2%}), Avg Test Acc {:.8f}'.format(
@@ -162,5 +163,3 @@ def main():
 
 if __name__ == '__main__':
         main()
-
-
