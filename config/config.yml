@@ -15,7 +15,7 @@ node_type_dict:
 max_edges: 9
 
 train_size: 4236
-val_size: 1059
+val_size: 1024
 drop_last: True
 data_loader_workers: 6
 batch_size: 256
@@ -35,8 +35,8 @@ ranker:
   d_patch: 7
   d_patch_vec: 256
   d_model: 256
-  d_ffn_inner: 2048
-  d_tier_prj_inner: 512
+  d_ffn_inner: 1024
+  d_tier_prj_inner: 2048
   n_layers: 6
   n_head: 4
   d_k: 64
@@ -52,12 +52,12 @@ optimizer:
   weight_decay: 5.0e-4 # AdamW默认是1e-2, 这是因为直接将L2正则加在了二阶动量上，可以尝试默认值, tranfomer复现代码是5.0e-4
 
 lr_scheduler:
-  lr_mul: 0.05
-  n_warmup_steps: 50
+  lr_mul: 0.1
+  n_warmup_steps: 30
 
 reg:
-  ranking_reg_factor: 1.0e-3
-  top_reg_factor: 1.0e-3
+  ranking_reg_factor: 0.01
+  top_reg_factor: 0.01
 
 sampler:
   top_tier: 1

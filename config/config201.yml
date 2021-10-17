@@ -18,8 +18,8 @@ val_batch_size: 128
 
 start_epochs: 0
 ranker_epochs: 90
-sampler_epochs: 120
-validate_freq: 5
+sampler_epochs: 140
+validate_freq: 1
 
 strategy: "val_acc"
 
