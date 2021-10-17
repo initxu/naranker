@@ -234,7 +234,7 @@ def main():
         tpk5_best[2]/len(dataset),
         tpk5_meter.avg))
 
-    logger.info('Using time {:.4f}'.format(time.perf_counter()-start))
+    logger.info('train ranker and searching using time {:.4f} seconds'.format(time.perf_counter()-start))
 
 if __name__ == '__main__':
     main()
