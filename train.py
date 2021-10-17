@@ -61,6 +61,8 @@ def build_arg_and_env(run_args):
 
 
 def main():
+    start = time.perf_counter()
+    
     run_args = get_args()
     args = build_arg_and_env(run_args)
 
@@ -232,6 +234,7 @@ def main():
         tpk5_best[2]/len(dataset),
         tpk5_meter.avg))
 
+    logger.info('Using time {:.4f}'.format(time.perf_counter()-start))
 
 if __name__ == '__main__':
     main()
