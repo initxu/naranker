@@ -177,7 +177,9 @@ def main():
         else:
             is_best = False
         save_checkpoint(args.save_path, ranker, optimizer, lr_scheduler, args, epoch, distri_list, is_best)
-        
+
+    logger.info('train ranker using time {:.4f} seconds'.format(time.perf_counter()-start))
+       
     # sample
     assert args.sampler_epochs > args.ranker_epochs, 'sampler_epochs should be larger than ranker_epochs'
     assert Bucket.get_n_tier()==0, 'Bucket counts should be reset to 0'

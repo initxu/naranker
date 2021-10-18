@@ -52,9 +52,9 @@ def train_epoch(model, train_dataloader, criterion, rank_reg, top_reg, optimizer
         
         output, total_embedding_list = model(arch_feature, tier_feature)  # arch shape [256,19,7,7], tier_feature [5,19,512],后者detach
         
-        rank_reg_term = args.reg.ranking_reg_factor * rank_reg(output, target)
-        top_reg_term = args.reg.top_reg_factor * top_reg(output, score)
-        loss = criterion(output, target) + rank_reg_term  + top_reg_term
+        # rank_reg_term = args.reg.ranking_reg_factor * rank_reg(output, target)
+        # top_reg_term = args.reg.top_reg_factor * top_reg(output, score)
+        loss = criterion(output, target) #+ rank_reg_term  + top_reg_term
         writter.add_scalar('{}/iter_loss'.format(flag), loss, total_iter)
         loss.backward()
         
