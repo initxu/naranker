@@ -80,6 +80,9 @@ def feature_tensor_encoding(arch:dict, arch_feature_dim=7, arch_feature_channels
         cell_flops = torch.tensor(vertex_flops_dict_[fk])
         cell_params = torch.tensor(vertex_params_dict_[pk])
 
+        cell_flops = torch.true_divide(cell_flops, 1e7)
+        cell_params = torch.true_divide(cell_params, 1e5)
+
         if num_vertices < arch_feature_dim:
             cell_flops = vector_padding(cell_flops, arch_feature_dim, num_vertices)
             cell_params = vector_padding(cell_params, arch_feature_dim, num_vertices)
