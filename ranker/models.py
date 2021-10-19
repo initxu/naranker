@@ -129,7 +129,7 @@ class Transformer(nn.Module):
         src_mask = None
         trg_mask = None
 
-        decoder_output_list = []
+        # decoder_output_list = []
         total_prob = torch.zeros(src_seq.size(0),self.n_tier, device=src_seq.device)                                   # [256,5]
 
         src_seq = src_seq.view(-1, self.n_arch_patch, self.d_patch*self.d_patch)                # [256,19,7,7] → [256,19,49]
@@ -158,7 +158,7 @@ class Transformer(nn.Module):
             trg_tier_seq = trg_seq[i].unsqueeze(dim=0)                                          # 逐个提取[1,19,512]的编码，过decoder
             dec_output, *_ = self.decoder(trg_tier_seq, trg_mask, enc_output, src_mask)         # dec_output(256,19,512), 这里的256个输出是一个batch数据与tier对比后的编码
             total_logit += dec_output
-            decoder_output_list.append(dec_output.clone().detach())                               # 依次存五个tier对比过后的编码
+            # decoder_output_list.append(dec_output.clone().detach())                               # 依次存五个tier对比过后的编码
 
         total_logit = total_logit.view(-1, self.n_arch_patch * self.d_model)                  # [256,19,512] → [256,9728]
         total_prob = self.tier_prj(total_logit)                                               # [256,9728] linear → [256,4096] linear → [256,5], target is 5 tier
@@ -166,4 +166,4 @@ class Transformer(nn.Module):
         if self.scale_prj:
             total_prob *= self.d_model ** -0.5
 
-        return total_prob, decoder_output_list
+        return total_prob, enc_output
