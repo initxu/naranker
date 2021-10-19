@@ -11,7 +11,7 @@ from dataset import NASBench201DataBase, NASBench201Dataset, SplitSubet
 from architecture import Bucket
 from ranker import Transformer
 from sampler import ArchSampler201
-from utils.loss_ops import CrossEntropyLossSoft, GlobalClassDistanceRegularization, TopRankRegularization
+from utils.loss_ops import CrossEntropyLossSoft
 from utils.optim import LRScheduler
 from utils.metric import AverageMeter
 from utils.setup import setup_seed, setup_logger
@@ -108,8 +108,6 @@ def main():
 
     # build loss
     criterion = CrossEntropyLossSoft().cuda(device)
-    rank_reg = GlobalClassDistanceRegularization().cuda(device)
-    top_reg = TopRankRegularization().cuda(device)
 
     # build model
     logger.info('Building model with {}'.format(args.ranker))
@@ -159,7 +157,7 @@ def main():
     # train ranker
     for epoch in range(args.start_epochs, args.ranker_epochs):
         flag = args.network_type + ' Ranker Train'
-        train_acc, train_loss, distri_list = train_epoch_201(ranker, train_dataloader, criterion, rank_reg, top_reg, optimizer, lr_scheduler, device, args, logger, tb_writer, epoch, flag)
+        train_acc, train_loss, distri_list = train_epoch_201(ranker, train_dataloader, criterion, optimizer, lr_scheduler, device, args, logger, tb_writer, epoch, flag)
         tb_writer.add_scalar('{}/epoch_accuracy'.format(flag), train_acc, epoch)
         tb_writer.add_scalar('{}/epoch_loss'.format(flag), train_loss, epoch)
 
