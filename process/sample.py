@@ -55,10 +55,12 @@ def evaluate_sampled_batch(model, sampler : ArchSampler, tier_list, batch_static
         tier_feature = get_tier_emb(tier_list, device)
         assert not (torch.any(torch.isnan(tier_feature)) or torch.any(torch.isinf(tier_feature))), 'tier feature is nan or inf'
 
-        output, total_embedding_list = model(arch_feature, tier_feature)
+        # output, total_embedding_list = model(arch_feature, tier_feature)
+        output, enc_output = model(arch_feature, tier_feature)
         prob = F.softmax(output, dim=1)
 
-        classify_tier_emb_by_pred(total_embedding_list, tier_list, prob)
+        classify_enc_emb_by_pred(enc_output.clone().detach(), tier_list, prob)
+        # classify_tier_emb_by_pred(total_embedding_list, tier_list, prob)
         classify_tier_counts_by_pred(params, flops, n_nodes, tier_list, prob, args.bins)
 
         # find best pred arch

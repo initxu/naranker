@@ -53,6 +53,26 @@ def classify_tier_emb_by_target(total_embedding_list, tier_list, target):
         else:
             tier_list[i].updata_bucket_emb(tier_emb)
 
+def classify_enc_emb_by_target(enc_output, tier_list, target):
+    for i in range(len(tier_list)):
+        idx = torch.where(target[:,i] == 1)
+        tier_emb = enc_output[idx]
+        if tier_emb.size(0)==0 or tier_emb.size(1)==0 or tier_emb.size(2)==0: # 本tier此时没有分到结构编码
+            continue
+        else:
+            tier_list[i].updata_bucket_emb(tier_emb)
+
+def classify_enc_emb_by_pred(enc_output, tier_list, pred):
+    _, index = torch.topk(pred, k=1, dim=1)
+    index = index.squeeze(dim=1)
+    for i in range(len(tier_list)):
+        idx = torch.where(index == i)
+        tier_emb = enc_output[idx]
+        if tier_emb.size(0)==0 or tier_emb.size(1)==0 or tier_emb.size(2)==0: # 本tier此时没有分到
+            continue
+        else:
+            tier_list[i].updata_bucket_emb(tier_emb)
+
 def classify_tier_emb_by_pred(total_embedding_list, tier_list, pred):
     _, index = torch.topk(pred, k=1, dim=1)
     index = index.squeeze(dim=1)
