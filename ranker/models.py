@@ -139,18 +139,31 @@ class Transformer(nn.Module):
 
         enc_output, *_ = self.encoder(src_seq, src_mask)                                        # enc_output(256,19,512)
         
+        # for i in range(trg_seq.size(0)):
+        #     trg_tier_seq = trg_seq[i].unsqueeze(dim=0)                                          # 逐个提取[1,19,512]的编码，过decoder
+        #     dec_output, *_ = self.decoder(trg_tier_seq, trg_mask, enc_output, src_mask)         # dec_output(256,19,512), 这里的256个输出是一个batch数据与tier对比后的编码
+        #     decoder_output_list.append(dec_output.clone().detach())                               # 依次存五个tier对比过后的编码
+
+        #     dec_output = dec_output.view(-1, self.n_arch_patch * self.d_model)                  # [256,19,512] → [256,9728]
+        #     seq_logit = self.tier_prj(dec_output)                                               # [256,9728] linear → [256,4096] linear → [256,5], target is 5 tier
+        
+        #     if self.scale_prj:
+        #         seq_logit *= self.d_model ** -0.5
+            
+        #     prob = F.softmax(seq_logit,dim=1)
+        #     total_prob += prob
+
+        total_logit = torch.zeros(src_seq.size(0),self.n_arch_patch, self.d_model, device=src_seq.device)
         for i in range(trg_seq.size(0)):
             trg_tier_seq = trg_seq[i].unsqueeze(dim=0)                                          # 逐个提取[1,19,512]的编码，过decoder
             dec_output, *_ = self.decoder(trg_tier_seq, trg_mask, enc_output, src_mask)         # dec_output(256,19,512), 这里的256个输出是一个batch数据与tier对比后的编码
+            total_logit += dec_output
             decoder_output_list.append(dec_output.clone().detach())                               # 依次存五个tier对比过后的编码
 
-            dec_output = dec_output.view(-1, self.n_arch_patch * self.d_model)                  # [256,19,512] → [256,9728]
-            seq_logit = self.tier_prj(dec_output)                                               # [256,9728] linear → [256,4096] linear → [256,5], target is 5 tier
+        total_logit = total_logit.view(-1, self.n_arch_patch * self.d_model)                  # [256,19,512] → [256,9728]
+        total_prob = self.tier_prj(total_logit)                                               # [256,9728] linear → [256,4096] linear → [256,5], target is 5 tier
         
-            if self.scale_prj:
-                seq_logit *= self.d_model ** -0.5
-            
-            prob = F.softmax(seq_logit,dim=1)
-            total_prob += prob
+        if self.scale_prj:
+            total_prob *= self.d_model ** -0.5
 
         return total_prob, decoder_output_list
