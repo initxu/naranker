@@ -1,5 +1,6 @@
 import os
 import math
+import time
 import torch
 import random
 import argparse
@@ -121,6 +122,7 @@ def main():
         val_acc, val_loss = validate(ranker, val_dataloader, criterion, aux_criterion, device, args, logger, 0, flag)
 
     # sample
+    start = time.perf_counter()
     assert args.sampler_epochs > args.ranker_epochs, 'sampler_epochs should be larger than ranker_epochs'
     assert Bucket.get_n_tier()==0, 'Bucket counts should be reset to 0'
     tier_list = init_tier_list(args)
@@ -163,6 +165,7 @@ def main():
         tpk5_best[2]/len(dataset),
         tpk5_meter.avg))
     
+    logger.info('search using time {:.4f} seconds'.format(time.perf_counter()-start))
 
 if __name__ == '__main__':
         main()
