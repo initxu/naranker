@@ -7,7 +7,7 @@ from utils.metric import AverageMeter, compute_accuracy
 
 from .train_utils import *
 
-def train_epoch_201(model, train_dataloader, criterion, optimizer, lr_scheduler,
+def train_epoch_201(model, train_dataloader, criterion, aux_criterion, optimizer, lr_scheduler,
                 device, args, logger, writter, epoch, flag):
 
     epoch_start = time.time()
@@ -50,9 +50,12 @@ def train_epoch_201(model, train_dataloader, criterion, optimizer, lr_scheduler,
 
         optimizer.zero_grad()
         
-        output, total_embedding_list = model(arch_feature, tier_feature)  # arch shape [256,19,7,7], tier_feature [5,19,512],后者detach
+        output, enc_output, val_acc_pred = model(arch_feature, tier_feature)
         
         loss = criterion(output, target)
+        if aux_criterion:
+            aux_loss = aux_criterion(val_acc_pred.squeeze(1), val_acc)
+            loss += args.loss_factor * aux_loss
         
         writter.add_scalar('{}/iter_loss'.format(flag), loss, total_iter)
         loss.backward()
@@ -61,7 +64,7 @@ def train_epoch_201(model, train_dataloader, criterion, optimizer, lr_scheduler,
         writter.add_scalar('{}/iter_lr'.format(flag), optimizer.param_groups[0]['lr'], total_iter)
         optimizer.step()
 
-        classify_tier_emb_by_target(total_embedding_list, tier_list, target)
+        classify_enc_emb_by_target(enc_output.clone().detach(), tier_list, target)
         classify_tier_counts_by_target_201(params, flops, edges_type_counts, tier_list, target, args.bins)
         batch_statics_dict = get_batch_statics(tier_list)
         distri_list.append(batch_statics_dict)
@@ -90,7 +93,7 @@ def train_epoch_201(model, train_dataloader, criterion, optimizer, lr_scheduler,
     
     return batch_acc.avg, batch_loss.avg, distri_list
 
-def validate_201(model, val_dataloader, criterion, device, args, logger, epoch, flag):
+def validate_201(model, val_dataloader, criterion, aux_criterion, device, args, logger, epoch, flag):
     epoch_start = time.time()
 
     total_iter = len(val_dataloader)-1
@@ -124,11 +127,14 @@ def validate_201(model, val_dataloader, criterion, device, args, logger, epoch, 
         tier_feature = get_tier_emb(tier_list, device)
         assert not (torch.any(torch.isnan(tier_feature)) or torch.any(torch.isinf(tier_feature))), 'tier feature is nan or inf'
 
-        output, total_embedding_list = model(arch_feature, tier_feature)
+        output, enc_output, val_acc_pred = model(arch_feature, tier_feature)
         
         loss = criterion(output, target)
+        if aux_criterion:
+            aux_loss = aux_criterion(val_acc_pred.squeeze(1), val_acc)
+            loss += args.loss_factor * aux_loss
 
-        classify_tier_emb_by_target(total_embedding_list, tier_list, target)
+        classify_enc_emb_by_target(enc_output.clone().detach(), tier_list, target)
 
         acc = compute_accuracy(output, target)
         

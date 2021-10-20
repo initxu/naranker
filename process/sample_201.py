@@ -65,29 +65,30 @@ def evaluate_sampled_batch_201(model, sampler : ArchSampler201, tier_list, batch
         tier_feature = get_tier_emb(tier_list, device)
         assert not (torch.any(torch.isnan(tier_feature)) or torch.any(torch.isinf(tier_feature))), 'tier feature is nan or inf'
 
-        output, total_embedding_list = model(arch_feature, tier_feature)
+        output, enc_output, val_acc_pred = model(arch_feature, tier_feature)
         prob = F.softmax(output, dim=1)
 
-        classify_tier_emb_by_pred(total_embedding_list, tier_list, prob)
+        classify_enc_emb_by_pred(enc_output.clone().detach(), tier_list, prob)
         classify_tier_counts_by_pred_201(params, flops, edges_type_counts, tier_list, prob, args.bins)
 
         # find best pred arch
-        val, index = torch.topk(prob, k=1, dim=1)
+        _, index = torch.topk(prob, k=1, dim=1)
         index = index.squeeze(dim=1)
-        val = val.squeeze(dim=1)
+
         idx = torch.where(index == 0)   # tier 1 对应的下标
-        t1_prob = val[idx]
+        
         t1_test_acc = test_acc[idx]
         t1_rank = rank[idx]
+        t1_pred_val_acc =  val_acc_pred.squeeze(1)[idx]
 
-        if t1_prob.size(0) >= 5 or t1_test_acc.size(0) >= 5 or t1_rank.size(0) >= 5:
-            tpk5_prob, tpk5_idx = torch.topk(t1_prob, k=5)
+        if t1_pred_val_acc.size(0) >= 5:
+            _, tpk5_idx = torch.topk(t1_pred_val_acc, k=5)
             tpk5_rank = t1_rank[tpk5_idx]
             tpk5_test_acc = t1_test_acc[tpk5_idx]
             tpk5_best_rank = min(tpk5_rank)
             tpk5_best_test_acc = max(tpk5_test_acc)
 
-            tpk1_prob, tpk1_idx = torch.topk(t1_prob, k=1)
+            _, tpk1_idx = torch.topk(t1_pred_val_acc, k=1)
             tpk1_rank = t1_rank[tpk1_idx]
             tpk1_test_acc = t1_test_acc[tpk1_idx]
 
@@ -103,24 +104,19 @@ def evaluate_sampled_batch_201(model, sampler : ArchSampler201, tier_list, batch
 
 
         sample_time = time.time() - sample_start
-        # logger.info('[{}][iter:{:2d}] Time: {:.2f} Test Acc@top1: {:.8f} Rank: {:5d}(top{:6.2%})'.format(
-        #         flag, it-args.ranker_epochs,
-        #         sample_time,
-        #         best_acc_at1,  
-        #         best_rank_at1,
-        #         best_rank_percentage_at1))
-        logger.info('[{}][iter:{:2d}] Time: {:.2f} Test Acc@top5: {:.8f} Rank: {:5d}(top {:6.2%})'.format(
+        logger.info('[{}][iter:{:2d}] Time: {:.2f} Test Acc@top5: {:.8f} Rank: {:5d}(top {:6.2%}) | Test Acc@top1: {:.8f} Rank: {:5d}(top{:6.2%})'.format(
                 flag, it-args.ranker_epochs,
                 sample_time,
                 best_acc_at5,
                 best_rank_at5,
-                best_rank_percentage_at5))
+                best_rank_percentage_at5,
+                best_acc_at1,  
+                best_rank_at1,
+                best_rank_percentage_at1))
 
-        batch_statics_dict = get_batch_statics(tier_list)
-
-        return batch_statics_dict, best_acc_at1, best_rank_at1, best_acc_at5, best_rank_at5
+        return best_acc_at1, best_rank_at1, best_acc_at5, best_rank_at5
 
     else:
         logger.info('[{}][iter:{:2d}] No qulalifed arch'.format(flag, it-args.ranker_epochs))
         
-        return None, None, None, None, None
+        return None, None, None, None

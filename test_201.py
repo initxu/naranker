@@ -1,5 +1,6 @@
 import os
 import math
+import time
 import torch
 import random
 import argparse
@@ -9,7 +10,7 @@ from dataset import NASBench201DataBase, NASBench201Dataset, SplitSubet
 from architecture import Bucket
 from ranker import Transformer
 from sampler import ArchSampler201
-from utils.loss_ops import CrossEntropyLossSoft
+from utils.loss_ops import CrossEntropyLossSoft, RankLoss
 from utils.metric import AverageMeter
 from utils.setup import setup_seed, setup_logger
 from utils.config import get_config
@@ -28,7 +29,7 @@ def get_args():
                         type=str,
                         help='Path to load data')
     parser.add_argument('--save_dir',
-                        default='./output/debug_20211015075914',
+                        default='./output/1',
                         type=str,
                         help='Path to save output')
     parser.add_argument('--checkpoint',
@@ -82,6 +83,8 @@ def main():
         pin_memory=True)
 
     criterion = CrossEntropyLossSoft().cuda(device)
+    if args.aux_loss:
+        aux_criterion = RankLoss().cuda(device)
 
     logger.info('Building model with {}'.format(args.ranker))
     ranker = Transformer(
@@ -98,6 +101,7 @@ def main():
         d_v=args.ranker.d_v,
         dropout=args.ranker.dropout,
         n_position=args.ranker.n_position,
+        d_val_acc_prj_inner = args.ranker.d_val_acc_prj_inner,
         scale_prj=args.ranker.scale_prj)
     
     ranker.load_state_dict(checkpoint['state_dict'])
@@ -115,17 +119,18 @@ def main():
     logger.info('Start to use {} file for testing ranker and sampling'.format(ckp_path))
     with torch.no_grad():
         flag = args.network_type + ' Ranker Test'
-        val_acc, val_loss = validate_201(ranker, val_dataloader, criterion, device, args, logger, 0, flag)
+        val_acc, val_loss = validate_201(ranker, val_dataloader, criterion, aux_criterion, device, args, logger, 0, flag)
 
     # sample
+    start = time.perf_counter()
     assert args.sampler_epochs > args.ranker_epochs, 'sampler_epochs should be larger than ranker_epochs'
     assert Bucket.get_n_tier()==0, 'Bucket counts should be reset to 0'
     tier_list = init_tier_list(args)
     
-    # tpk1_list = []
+    tpk1_list = []
     tpk5_list = []
     history_best_distri = {}
-    # tpk1_meter = AverageMeter()
+    tpk1_meter = AverageMeter()
     tpk5_meter = AverageMeter()
 
     distri_list = checkpoint['distri']
@@ -138,20 +143,22 @@ def main():
             if (it-args.ranker_epochs)%distri_reuse_step==0:
                 history_best_distri = distri_list[(it-args.ranker_epochs)//distri_reuse_step]
 
-            batch_statics_dict, best_acc_at1, best_rank_at1, best_acc_at5, best_rank_at5 = evaluate_sampled_batch_201(ranker, sampler, tier_list, history_best_distri, dataset, it, args, device, None, logger, flag)
-            # tpk1_meter.update(best_acc_at1, n=1)
-            # tpk1_list.append((it-args.ranker_epochs, best_acc_at1, best_rank_at1))
+            best_acc_at1, best_rank_at1, best_acc_at5, best_rank_at5 = evaluate_sampled_batch_201(ranker, sampler, tier_list, history_best_distri, dataset, it, args, device, None, logger, flag)
+            if best_acc_at1 != None:
+                tpk1_meter.update(best_acc_at1, n=1)
+                tpk1_list.append((it-args.ranker_epochs, best_acc_at1, best_rank_at1))
             if best_acc_at5 != None:
                 tpk5_meter.update(best_acc_at5, n=1)
                 tpk5_list.append((it-args.ranker_epochs, best_acc_at5, best_rank_at5))
     
-    # tpk1_best = sorted(tpk1_list, key=lambda item:item[1], reverse=True)[0]
-    # logger.info('[Result] Top1 Best Arch in Iter {:2d}: Test Acc {:.8f} Rank: {:5d}(top{:.2%}), Avg Test Acc {:.8f}'.format(
-    #     tpk1_best[0],
-    #     tpk1_best[1],  
-    #     tpk1_best[2],
-    #     tpk1_best[2]/len(dataset),
-    #     tpk1_meter.avg))
+    tpk1_best = sorted(tpk1_list, key=lambda item:item[1], reverse=True)[0]
+    logger.info('[Result] Top1 Best Arch in Iter {:2d}: Test Acc {:.8f} Rank: {:5d}(top {:.2%}), Avg Test Acc {:.8f}'.format(
+        tpk1_best[0],
+        tpk1_best[1],  
+        tpk1_best[2],
+        tpk1_best[2]/len(dataset),
+        tpk1_meter.avg))
+
     tpk5_best = sorted(tpk5_list, key=lambda item:item[1], reverse=True)[0]
     logger.info('[Result] Top5 Best Arch in Iter {:2d}: Test Acc {:.8f} Rank: {:5d}(top {:.2%}), Avg Test Acc {:.8f}'.format(
         tpk5_best[0],
@@ -160,6 +167,7 @@ def main():
         tpk5_best[2]/len(dataset),
         tpk5_meter.avg))
     
+    logger.info('search using time {:.4f} seconds'.format(time.perf_counter()-start))
 
 if __name__ == '__main__':
         main()
