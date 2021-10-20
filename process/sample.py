@@ -93,17 +93,14 @@ def evaluate_sampled_batch(model, sampler : ArchSampler, tier_list, batch_static
 
 
     sample_time = time.time() - sample_start
-    logger.info('[{}][iter:{:2d}] Time: {:.2f} Test Acc@top1: {:.8f} Rank: {:5d}(top{:6.2%})'.format(
-            flag, it-args.ranker_epochs,
-            sample_time,
-            best_acc_at1,  
-            best_rank_at1,
-            best_rank_percentage_at1))
-    logger.info('[{}][iter:{:2d}] Time: {:.2f} Test Acc@top5: {:.8f} Rank: {:5d}(top {:6.2%})'.format(
+    logger.info('[{}][iter:{:2d}] Time: {:.2f} Test Acc@top5: {:.8f} Rank: {:5d}(top {:6.2%}) | Test Acc@top1: {:.8f} Rank: {:5d}(top {:6.2%})'.format(
             flag, it-args.ranker_epochs,
             sample_time,
             best_acc_at5,
             best_rank_at5,
-            best_rank_percentage_at5))
+            best_rank_percentage_at5,
+            best_acc_at1,  
+            best_rank_at1,
+            best_rank_percentage_at1))
 
     return best_acc_at1, best_rank_at1, best_acc_at5, best_rank_at5

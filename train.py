@@ -223,7 +223,7 @@ def main():
             tpk5_list.append((it-args.ranker_epochs, best_acc_at5, best_rank_at5))
                 
     tpk1_best = sorted(tpk1_list, key=lambda item:item[1], reverse=True)[0]
-    logger.info('[Result] Top1 Best Arch in Iter {:2d}: Test Acc {:.8f} Rank: {:5d}(top{:.2%}), Avg Test Acc {:.8f}'.format(
+    logger.info('[Result] Top1 Best Arch in Iter {:2d}: Test Acc {:.8f} Rank: {:5d}(top {:.2%}), Avg Test Acc {:.8f}'.format(
         tpk1_best[0],
         tpk1_best[1],  
         tpk1_best[2],
