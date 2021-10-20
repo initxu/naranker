@@ -11,7 +11,7 @@ from dataset import NASBenchDataBase, NASBenchDataset, SplitSubet
 from architecture import Bucket
 from ranker import Transformer
 from sampler import ArchSampler
-from utils.loss_ops import CrossEntropyLossSoft
+from utils.loss_ops import CrossEntropyLossSoft, RankLoss
 from utils.optim import LRScheduler
 from utils.metric import AverageMeter
 from utils.setup import setup_seed, setup_logger
@@ -108,6 +108,8 @@ def main():
 
     # build loss
     criterion = CrossEntropyLossSoft().cuda(device)
+    if args.aux_loss:
+        aux_criterion = RankLoss().cuda(device)
 
     # build model
     logger.info('Building model with {}'.format(args.ranker))
@@ -125,6 +127,7 @@ def main():
         d_v=args.ranker.d_v,
         dropout=args.ranker.dropout,
         n_position=args.ranker.n_position,
+        d_val_acc_prj_inner = args.ranker.d_val_acc_prj_inner,
         scale_prj=args.ranker.scale_prj)
     ranker.cuda(device)
 
@@ -157,14 +160,14 @@ def main():
     # train ranker
     for epoch in range(args.start_epochs, args.ranker_epochs):
         flag = 'Ranker Train'
-        train_acc, train_loss, distri_list = train_epoch(ranker, train_dataloader, criterion, optimizer, lr_scheduler, device, args, logger, tb_writer, epoch, flag)
+        train_acc, train_loss, distri_list = train_epoch(ranker, train_dataloader, criterion, aux_criterion, optimizer, lr_scheduler, device, args, logger, tb_writer, epoch, flag)
         tb_writer.add_scalar('{}/epoch_accuracy'.format(flag), train_acc, epoch)
         tb_writer.add_scalar('{}/epoch_loss'.format(flag), train_loss, epoch)
 
         # if (epoch+1) % args.validate_freq == 0:
         with torch.no_grad():
             flag = 'Ranker Validate'
-            val_acc, val_loss = validate(ranker, val_dataloader, criterion, device, args, logger, epoch, flag)
+            val_acc, val_loss = validate(ranker, val_dataloader, criterion, aux_criterion, device, args, logger, epoch, flag)
             tb_writer.add_scalar('{}/epoch_accuracy'.format(flag), val_acc, epoch)
             tb_writer.add_scalar('{}/epoch_loss'.format(flag), val_loss, epoch)
 
@@ -183,10 +186,10 @@ def main():
     assert Bucket.get_n_tier()==0, 'Bucket counts should be reset to 0'
     tier_list = init_tier_list(args)
     
-    # tpk1_list = []
+    tpk1_list = []
     tpk5_list = []
     history_best_distri = {}
-    # tpk1_meter = AverageMeter()
+    tpk1_meter = AverageMeter()
     tpk5_meter = AverageMeter()
 
     # the distri_list are all the same throughout the epoch, but the checkpoint saves only the one when ranker has highest val acc
@@ -213,19 +216,20 @@ def main():
             if (it-args.ranker_epochs)%distri_reuse_step==0:
                 history_best_distri = distri_list[(it-args.ranker_epochs)//distri_reuse_step]
 
-            batch_statics_dict, best_acc_at1, best_rank_at1, best_acc_at5, best_rank_at5 = evaluate_sampled_batch(ranker, sampler, tier_list, history_best_distri, dataset, it, args, device, tb_writer, logger, flag)
-            # tpk1_meter.update(best_acc_at1, n=1)
-            # tpk1_list.append((it-args.ranker_epochs, best_acc_at1, best_rank_at1))
+            best_acc_at1, best_rank_at1, best_acc_at5, best_rank_at5 = evaluate_sampled_batch(ranker, sampler, tier_list, history_best_distri, dataset, it, args, device, tb_writer, logger, flag)
+            tpk1_meter.update(best_acc_at1, n=1)
+            tpk1_list.append((it-args.ranker_epochs, best_acc_at1, best_rank_at1))
             tpk5_meter.update(best_acc_at5, n=1)
             tpk5_list.append((it-args.ranker_epochs, best_acc_at5, best_rank_at5))
                 
-    # tpk1_best = sorted(tpk1_list, key=lambda item:item[1], reverse=True)[0]
-    # logger.info('[Result] Top1 Best Arch in Iter {:2d}: Test Acc {:.8f} Rank: {:5d}(top{:.2%}), Avg Test Acc {:.8f}'.format(
-    #     tpk1_best[0],
-    #     tpk1_best[1],  
-    #     tpk1_best[2],
-    #     tpk1_best[2]/len(dataset),
-    #     tpk1_meter.avg))
+    tpk1_best = sorted(tpk1_list, key=lambda item:item[1], reverse=True)[0]
+    logger.info('[Result] Top1 Best Arch in Iter {:2d}: Test Acc {:.8f} Rank: {:5d}(top{:.2%}), Avg Test Acc {:.8f}'.format(
+        tpk1_best[0],
+        tpk1_best[1],  
+        tpk1_best[2],
+        tpk1_best[2]/len(dataset),
+        tpk1_meter.avg))
+    
     tpk5_best = sorted(tpk5_list, key=lambda item:item[1], reverse=True)[0]
     logger.info('[Result] Top5 Best Arch in Iter {:2d}: Test Acc {:.8f} Rank: {:5d}(top {:.2%}), Avg Test Acc {:.8f}'.format(
         tpk5_best[0],

@@ -85,7 +85,7 @@ class Transformer(nn.Module):
             self, n_tier=5, n_arch_patch=19, d_patch=7,
             d_patch_vec=512, d_model=512, d_ffn_inner=2048, d_tier_prj_inner=256,
             n_layers=6, n_head=8, d_k=64, d_v=64, dropout=0.1, n_position=200,
-            scale_prj=True):
+            d_val_acc_prj_inner=2048, scale_prj=True):
 
         super().__init__()
 
@@ -112,6 +112,12 @@ class Transformer(nn.Module):
             nn.Linear(d_tier_prj_inner, n_tier)
             )
 
+        self.val_acc_prj = nn.Sequential(
+            nn.Linear(n_arch_patch * d_model, d_val_acc_prj_inner, bias=True),
+            nn.ReLU(),
+            nn.Linear(d_val_acc_prj_inner, 1)
+            )
+
         for p in self.parameters():
             if p.dim() > 1:
                 nn.init.xavier_uniform_(p) 
@@ -130,7 +136,7 @@ class Transformer(nn.Module):
         trg_mask = None
 
         # decoder_output_list = []
-        total_prob = torch.zeros(src_seq.size(0),self.n_tier, device=src_seq.device)                                   # [256,5]
+        # total_prob = torch.zeros(src_seq.size(0),self.n_tier, device=src_seq.device)                                   # [256,5]
 
         src_seq = src_seq.view(-1, self.n_arch_patch, self.d_patch*self.d_patch)                # [256,19,7,7] → [256,19,49]
 
@@ -138,6 +144,8 @@ class Transformer(nn.Module):
         trg_seq = self.trg_prj(trg_seq)                                                         # [5,19,512] → [5,19,512]
 
         enc_output, *_ = self.encoder(src_seq, src_mask)                                        # enc_output(256,19,512)
+
+        val_acc_pred = self.val_acc_prj(enc_output.clone().view(-1, self.n_arch_patch * self.d_model))
         
         # for i in range(trg_seq.size(0)):
         #     trg_tier_seq = trg_seq[i].unsqueeze(dim=0)                                          # 逐个提取[1,19,512]的编码，过decoder
@@ -161,9 +169,9 @@ class Transformer(nn.Module):
             # decoder_output_list.append(dec_output.clone().detach())                               # 依次存五个tier对比过后的编码
 
         total_logit = total_logit.view(-1, self.n_arch_patch * self.d_model)                  # [256,19,512] → [256,9728]
-        total_prob = self.tier_prj(total_logit)                                               # [256,9728] linear → [256,4096] linear → [256,5], target is 5 tier
+        total_logit = self.tier_prj(total_logit)                                               # [256,9728] linear → [256,4096] linear → [256,5], target is 5 tier
         
         if self.scale_prj:
-            total_prob *= self.d_model ** -0.5
+            total_logit *= self.d_model ** -0.5
 
-        return total_prob, enc_output
+        return total_logit, enc_output, val_acc_pred
