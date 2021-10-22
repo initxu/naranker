@@ -1,8 +1,8 @@
 arch: "NAR"
 
-exp_name: "n101_debug"
+exp_name: "n101_eps35_seed_44444444"
 
-seed: 20211117
+seed: 44444444
 
 is_cuda: True
 
@@ -22,8 +22,8 @@ data_loader_workers: 6
 batch_size: 256
 
 start_epochs: 0
-ranker_epochs: 100
-sampler_epochs: 150
+ranker_epochs: 35
+sampler_epochs: 85
 validate_freq: 1
 
 strategy: "val_acc"
@@ -48,7 +48,7 @@ ranker:
   scale_prj: True
 
 aux_loss: True
-loss_factor: 0.1
+loss_factor: 9
 
 optimizer:
   beta1: 0.9 

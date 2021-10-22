@@ -1,12 +1,12 @@
 arch: "NAR"
 
-exp_name: "n201_debug"
-seed: 20211117
+exp_name: "n201_imagenet16_seed99999999"
+seed: 99999999
 
 is_cuda: True
 
 space: "nasbench201"
-network_type: "cifar10"  # ['cifar10','cifar100','imagenet16']
+network_type: "imagenet16"  # ['cifar10','cifar100','imagenet16']
 
 train_size: 1000
 val_size: 256
