@@ -79,44 +79,52 @@ def evaluate_sampled_batch_201(model, sampler : ArchSampler201, tier_list, batch
         
         t1_test_acc = test_acc[idx]
         t1_rank = rank[idx]
+        t1_val_acc = val_acc[idx]
+        
         t1_pred_val_acc =  val_acc_pred.squeeze(1)[idx]
 
         if t1_pred_val_acc.size(0) >= 5:
             _, tpk5_idx = torch.topk(t1_pred_val_acc, k=5)
             tpk5_rank = t1_rank[tpk5_idx]
             tpk5_test_acc = t1_test_acc[tpk5_idx]
-            tpk5_best_rank = min(tpk5_rank)
+            tpk5_val_acc = t1_val_acc[tpk5_idx]
+
+            tpk5_best_rank, tep_id = torch.min(tpk5_rank, dim=0)
             tpk5_best_test_acc = max(tpk5_test_acc)
+            tpk5_best_val = tpk5_val_acc[tep_id]
 
             _, tpk1_idx = torch.topk(t1_pred_val_acc, k=1)
             tpk1_rank = t1_rank[tpk1_idx]
             tpk1_test_acc = t1_test_acc[tpk1_idx]
+            tpk1_val_acc = t1_val_acc[tpk1_idx]
 
-            results_tpk1.append((tpk1_test_acc.item(), tpk1_rank.item()))
-            results_tpk5.append((tpk5_best_test_acc.item(), tpk5_best_rank.item()))
+            results_tpk1.append((tpk1_test_acc.item(), tpk1_rank.item(), tpk1_val_acc.item()))
+            results_tpk5.append((tpk5_best_test_acc.item(), tpk5_best_rank.item(), tpk5_best_val.item()))
         
     if len(results_tpk1) != 0 or len(results_tpk5) != 0:
-        (best_acc_at1, best_rank_at1) = sorted(results_tpk1, key=lambda item:item[0], reverse=True)[0]
-        (best_acc_at5, best_rank_at5) = sorted(results_tpk5, key=lambda item:item[0], reverse=True)[0]
+        (best_acc_at1, best_rank_at1, best_val_acc_at1) = sorted(results_tpk1, key=lambda item:item[0], reverse=True)[0]
+        (best_acc_at5, best_rank_at5, best_val_acc_at5) = sorted(results_tpk5, key=lambda item:item[0], reverse=True)[0]
 
         best_rank_percentage_at1 = best_rank_at1/len(dataset)
         best_rank_percentage_at5 = best_rank_at5/len(dataset)
 
 
         sample_time = time.time() - sample_start
-        logger.info('[{}][iter:{:2d}] Time: {:.2f} Test Acc@top5: {:.8f} Rank: {:5d}(top {:6.2%}) | Test Acc@top1: {:.8f} Rank: {:5d}(top{:6.2%})'.format(
+        logger.info('[{}][iter:{:2d}] Time: {:.2f} Test Acc@top5: {:.8f} Rank: {:5d}(top {:6.2%}) Val Acc@top5: {:.8f}| Test Acc@top1: {:.8f} Rank: {:5d}(top{:6.2%}) Val Acc@top5: {:.8f}'.format(
                 flag, it-args.ranker_epochs,
                 sample_time,
                 best_acc_at5,
                 best_rank_at5,
                 best_rank_percentage_at5,
+                best_val_acc_at5,
                 best_acc_at1,  
                 best_rank_at1,
-                best_rank_percentage_at1))
+                best_rank_percentage_at1,
+                best_val_acc_at1))
 
-        return best_acc_at1, best_rank_at1, best_acc_at5, best_rank_at5
+        return best_acc_at1, best_rank_at1, best_val_acc_at1, best_acc_at5, best_rank_at5, best_val_acc_at5
 
     else:
         logger.info('[{}][iter:{:2d}] No qulalifed arch'.format(flag, it-args.ranker_epochs))
         
-        return None, None, None, None
+        return None, None, None, None, None, None
