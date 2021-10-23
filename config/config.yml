@@ -1,8 +1,8 @@
 arch: "NAR"
 
-exp_name: "n101_eps35_seed_44444444"
+exp_name: "n101_runtime_exp_seed77777777"
 
-seed: 44444444
+seed: 77777777
 
 is_cuda: True
 

@@ -61,7 +61,6 @@ def build_arg_and_env(run_args):
 
 
 def main():
-    start = time.perf_counter()
     
     run_args = get_args()
     args = build_arg_and_env(run_args)
@@ -155,9 +154,10 @@ def main():
     reuse_step=args.sampler.reuse_step,
     )
 
+    # train ranker
+    start = time.perf_counter()
     best_acc = 0
     is_best = False
-    # train ranker
     for epoch in range(args.start_epochs, args.ranker_epochs):
         flag = 'Ranker Train'
         train_acc, train_loss, distri_list = train_epoch(ranker, train_dataloader, criterion, aux_criterion, optimizer, lr_scheduler, device, args, logger, tb_writer, epoch, flag)

@@ -61,7 +61,6 @@ def build_arg_and_env(run_args):
 
 
 def main():
-    start = time.perf_counter()
 
     run_args = get_args()
     args = build_arg_and_env(run_args)
@@ -155,9 +154,10 @@ def main():
 
     assert args.network_type in ['cifar10','cifar100','imagenet16'], 'network type should be one of the [cifar10, cifar100, imagenet16]'
     
+    # train ranker
+    start = time.perf_counter()
     best_acc = 0
     is_best = False
-    # train ranker
     for epoch in range(args.start_epochs, args.ranker_epochs):
         flag = args.network_type + ' Ranker Train'
         train_acc, train_loss, distri_list = train_epoch_201(ranker, train_dataloader, criterion, aux_criterion, optimizer, lr_scheduler, device, args, logger, tb_writer, epoch, flag)

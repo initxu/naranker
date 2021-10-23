@@ -1,7 +1,7 @@
 arch: "NAR"
 
-exp_name: "n201_imagenet16_seed99999999"
-seed: 99999999
+exp_name: "n201_runtime_exp_seed33333333"
+seed: 33333333
 
 is_cuda: True
 
