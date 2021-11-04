@@ -1,6 +1,6 @@
 arch: "NAR"
 
-exp_name: "n101_runtime_exp_seed77777777"
+exp_name: "n101_dataset_exp_seed77777777"
 
 seed: 77777777
 
@@ -15,7 +15,7 @@ node_type_dict:
   output: 5
 max_edges: 9
 
-train_size: 4236
+train_size: 512
 val_size: 1024
 drop_last: True
 data_loader_workers: 6
@@ -66,7 +66,7 @@ sampler:
   batch_factor: 0.1
   reuse_step: 25 # for 25 batch 128, 12 for batch 64
   max_trails: 100
-  noisy_factor: 0.1
+  noisy_factor: 0.5
   flops_kl_thred: 2.5
   params_kl_thred: 2.5
   sample_size: 256
