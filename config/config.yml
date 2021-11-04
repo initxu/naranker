@@ -15,7 +15,7 @@ node_type_dict:
   output: 5
 max_edges: 9
 
-train_size: 512
+train_size: 4236
 val_size: 1024
 drop_last: True
 data_loader_workers: 6
