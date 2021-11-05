@@ -1,8 +1,8 @@
 arch: "NAR"
 
-exp_name: "n101_noisy0_seed99999999"
+exp_name: "n101_noisy1_runtime_seed1"
 
-seed: 99999999
+seed: 1
 
 is_cuda: True
 

@@ -1,12 +1,12 @@
 arch: "NAR"
 
-exp_name: "n201_c100_noisy0_exp_seed99999999"
-seed: 99999999
+exp_name: "n201_runtime_noisy05_exp_seed77777777"
+seed: 77777777
 
 is_cuda: True
 
 space: "nasbench201"
-network_type: "cifar100"  # ['cifar10','cifar100','imagenet16']
+network_type: "imagenet16"  # ['cifar10','cifar100','imagenet16']
 
 train_size: 1000
 val_size: 256
@@ -60,7 +60,7 @@ sampler:
   batch_factor: 0.1
   reuse_step: 25 # for 25 batch 128, 12 for batch 64
   max_trails: 100
-  noisy_factor: 0
+  noisy_factor: 0.5
   flops_kl_thred: 0.35
   params_kl_thred: 0.3
   edges_kl_thred: 1.5

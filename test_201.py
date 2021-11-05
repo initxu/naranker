@@ -29,7 +29,7 @@ def get_args():
                         type=str,
                         help='Path to load data')
     parser.add_argument('--save_dir',
-                        default='./output/1',
+                        default='./output/fixed_labels/n201_img16_noisy0_baseline/n201_img16_noisy0_exp_seed99999999_20211105150803',
                         type=str,
                         help='Path to save output')
     parser.add_argument('--checkpoint',
@@ -148,26 +148,28 @@ def main():
             if (it-args.ranker_epochs)%distri_reuse_step==0:
                 history_best_distri = distri_list[(it-args.ranker_epochs)//distri_reuse_step]
 
-            best_acc_at1, best_rank_at1, best_acc_at5, best_rank_at5 = evaluate_sampled_batch_201(ranker, sampler, tier_list, history_best_distri, dataset, it, args, device, None, logger, flag)
+            best_acc_at1, best_rank_at1, best_val_acc_at1, best_acc_at5, best_rank_at5, best_val_acc_at5 = evaluate_sampled_batch_201(ranker, sampler, tier_list, history_best_distri, dataset, it, args, device, None, logger, flag)
             if best_acc_at1 != None:
                 tpk1_meter.update(best_acc_at1, n=1)
-                tpk1_list.append((it-args.ranker_epochs, best_acc_at1, best_rank_at1))
+                tpk1_list.append((it-args.ranker_epochs, best_acc_at1, best_rank_at1, best_val_acc_at1))
             if best_acc_at5 != None:
                 tpk5_meter.update(best_acc_at5, n=1)
-                tpk5_list.append((it-args.ranker_epochs, best_acc_at5, best_rank_at5))
+                tpk5_list.append((it-args.ranker_epochs, best_acc_at5, best_rank_at5, best_val_acc_at5))
     
     tpk1_best = sorted(tpk1_list, key=lambda item:item[1], reverse=True)[0]
-    logger.info('[Result] Top1 Best Arch in Iter {:2d}: Test Acc {:.8f} Rank: {:5d}(top {:.2%}), Avg Test Acc {:.8f}'.format(
+    logger.info('[Result] Top1 Best Arch in Iter {:2d}: Test Acc {:.8f} Val Acc {:.8f} Rank: {:5d}(top {:.2%}), Avg Test Acc {:.8f}'.format(
         tpk1_best[0],
-        tpk1_best[1],  
+        tpk1_best[1],
+        tpk1_best[3],
         tpk1_best[2],
         tpk1_best[2]/len(dataset),
         tpk1_meter.avg))
 
     tpk5_best = sorted(tpk5_list, key=lambda item:item[1], reverse=True)[0]
-    logger.info('[Result] Top5 Best Arch in Iter {:2d}: Test Acc {:.8f} Rank: {:5d}(top {:.2%}), Avg Test Acc {:.8f}'.format(
+    logger.info('[Result] Top5 Best Arch in Iter {:2d}: Test Acc {:.8f} Val Acc {:.8f} Rank: {:5d}(top {:.2%}), Avg Test Acc {:.8f}'.format(
         tpk5_best[0],
-        tpk5_best[1],  
+        tpk5_best[1],
+        tpk5_best[3],
         tpk5_best[2],
         tpk5_best[2]/len(dataset),
         tpk5_meter.avg))
