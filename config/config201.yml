@@ -42,10 +42,10 @@ ranker:
   scale_prj: True
 
 aux_loss: True
-loss_factor: 0.01
+loss_factor: 9
 
 optimizer:
-  beta1: 0.9 
+  beta1: 0.9
   beta2: 0.99
   eps: 1.0e-9
   weight_decay: 1.0e-2
@@ -60,7 +60,7 @@ sampler:
   batch_factor: 0.1
   reuse_step: 25 # for 25 batch 128, 12 for batch 64
   max_trails: 100
-  noisy_factor: 0.1
+  noisy_factor: 0
   flops_kl_thred: 0.35
   params_kl_thred: 0.3
   edges_kl_thred: 1.5
