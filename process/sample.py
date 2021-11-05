@@ -46,7 +46,7 @@ def evaluate_sampled_batch(model, sampler : ArchSampler, tier_list, batch_static
     results_tpk5 = []
     for _, batch in enumerate(sampled_dataloader):
         
-        arch_feature, val_acc, test_acc, params, flops, n_nodes, rank = batch
+        arch_feature, val_acc, test_acc, params, flops, n_nodes, rank, label = batch
         arch_feature = arch_feature.float().cuda(device)
         params = params.float().cuda(device)
         flops = flops.float().cuda(device)

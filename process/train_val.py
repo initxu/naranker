@@ -28,21 +28,22 @@ def train_epoch(model, train_dataloader, criterion, aux_criterion, optimizer, lr
         batch_start = time.time()
         total_iter = epoch * len(train_dataloader) + it
         
-        arch_feature, val_acc, test_acc, params, flops, n_nodes, rank = batch
+        arch_feature, val_acc, test_acc, params, flops, n_nodes, rank, label = batch
         arch_feature = arch_feature.float().cuda(device)
         val_acc = val_acc.float().cuda(device)
         params = params.float().cuda(device)
         flops = flops.float().cuda(device)
         n_nodes = n_nodes.float().cuda(device)
+        label = label.cuda(device)
 
-        assert args.strategy in ['multi_obj', 'val_acc'], 'Wrong strategy'
-        if args.strategy == 'multi_obj':
-            score = val_acc / (params * flops + 1e-9)  # shape = [batchsize]
-        if args.strategy == 'val_acc':
-            score  = val_acc
+        # assert args.strategy in ['multi_obj', 'val_acc'], 'Wrong strategy'
+        # if args.strategy == 'multi_obj':
+        #     score = val_acc / (params * flops + 1e-9)  # shape = [batchsize]
+        # if args.strategy == 'val_acc':
+        #     score  = val_acc
 
-        target = get_target(score, args.ranker.n_tier, args.batch_size)
-        target = target.cuda(device)
+        # target = get_target(score, args.ranker.n_tier, args.batch_size)
+        # target = target.cuda(device)
 
         tier_feature = get_tier_emb(tier_list, device)
         assert not (torch.any(torch.isnan(tier_feature)) or torch.any(torch.isinf(tier_feature))), 'tier feature is nan or inf'
@@ -52,7 +53,14 @@ def train_epoch(model, train_dataloader, criterion, aux_criterion, optimizer, lr
         
         output, enc_output, val_acc_pred = model(arch_feature, tier_feature)
         
-        loss = criterion(output, target)
+        # if epoch ==0 and total_iter == 15: #(epoch ==34 and total_iter == 559): # or (epoch == 9 and total_iter == 159)or (epoch ==19 and total_iter == 319)
+        #     import pdb;pdb.set_trace()
+        #     a = {'output':output.clone().detach(),
+        #         'enc_output':enc_output.clone().detach(),
+        #         'target':target}
+        #     torch.save(a, "{}_feature.pt".format(epoch))
+        
+        loss = criterion(output, label)
 
         if aux_criterion:
             aux_loss = aux_criterion(val_acc_pred.squeeze(1), val_acc)
@@ -65,8 +73,8 @@ def train_epoch(model, train_dataloader, criterion, aux_criterion, optimizer, lr
         writter.add_scalar('{}/iter_lr'.format(flag), optimizer.param_groups[0]['lr'], total_iter)
         optimizer.step()
 
-        classify_enc_emb_by_target(enc_output.clone().detach(), tier_list, target)
-        classify_tier_counts_by_target(params, flops, n_nodes, tier_list, target, args.bins)
+        classify_enc_emb_by_target(enc_output.clone().detach(), tier_list, label)
+        classify_tier_counts_by_target(params, flops, n_nodes, tier_list, label, args.bins)
         batch_statics_dict = get_batch_statics(tier_list)
         distri_list.append(batch_statics_dict)
         
@@ -74,7 +82,7 @@ def train_epoch(model, train_dataloader, criterion, aux_criterion, optimizer, lr
             candi_dic = compare_kl_div(copy.deepcopy(batch_statics_dict[k]))
             writter.add_scalars('{}/{}_div'.format(flag, k), candi_dic, total_iter)
 
-        acc = compute_accuracy(output, target)
+        acc = compute_accuracy(output, label)
         writter.add_scalar('{}/iter_accuracy'.format(flag), acc, total_iter)
         
         b_sz = arch_feature.size(0)
@@ -109,36 +117,37 @@ def validate(model, val_dataloader, criterion, aux_criterion, device, args, logg
     for it, batch in enumerate(val_dataloader):
         batch_start = time.time()
         
-        arch_feature, val_acc, test_acc, params, flops, n_nodes, rank = batch
+        arch_feature, val_acc, test_acc, params, flops, n_nodes, rank, label= batch
         arch_feature = arch_feature.float().cuda(device)
         val_acc = val_acc.float().cuda(device)
         params = params.float().cuda(device)
         flops = flops.float().cuda(device)
         n_nodes = n_nodes.float().cuda(device)
+        label = label.cuda(device)
 
-        assert args.strategy in ['multi_obj', 'val_acc'], 'Wrong strategy'
-        if args.strategy == 'multi_obj':
-            score = val_acc / (params * flops + 1e-9)  # 假设shape = [batch]
-        if args.strategy == 'val_acc':
-            score  = val_acc
+        # assert args.strategy in ['multi_obj', 'val_acc'], 'Wrong strategy'
+        # if args.strategy == 'multi_obj':
+        #     score = val_acc / (params * flops + 1e-9)  # 假设shape = [batch]
+        # if args.strategy == 'val_acc':
+        #     score  = val_acc
 
-        target = get_target(score, args.ranker.n_tier, args.batch_size)
-        target = target.cuda(device)
+        # target = get_target(score, args.ranker.n_tier, args.batch_size)
+        # target = target.cuda(device)
 
         tier_feature = get_tier_emb(tier_list, device)
         assert not (torch.any(torch.isnan(tier_feature)) or torch.any(torch.isinf(tier_feature))), 'tier feature is nan or inf'
 
         output, enc_output, val_acc_pred = model(arch_feature, tier_feature)
         
-        loss = criterion(output, target)
+        loss = criterion(output, label)
 
         if aux_criterion:
             aux_loss = aux_criterion(val_acc_pred.squeeze(1), val_acc)
             loss += args.loss_factor * aux_loss
 
-        classify_enc_emb_by_target(enc_output.clone().detach(), tier_list, target)
+        classify_enc_emb_by_target(enc_output.clone().detach(), tier_list, label)
 
-        acc = compute_accuracy(output, target)
+        acc = compute_accuracy(output, label)
         
         b_sz = arch_feature.size(0)
         batch_loss.update(loss, b_sz)

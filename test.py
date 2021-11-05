@@ -29,13 +29,17 @@ def get_args():
                         type=str,
                         help='Path to load data')
     parser.add_argument('--save_dir',
-                        default='./output/n101_debug_20211020170904',
+                        default='./output/n101_noisy0_seed1_20211105153013',
                         type=str,
                         help='Path to save output')
     parser.add_argument('--checkpoint',
                         default='ckp_best.pth.tar',
                         type=str,
                         help='checkpoint file')
+    parser.add_argument('--save_file_name',
+                        default='noisy05_test.log',
+                        type=str,
+                        help='save file name')
 
     args = parser.parse_args()
 
@@ -48,13 +52,14 @@ def main():
     args.config_file = run_args.config_file
     args.data_path = run_args.data_path
     args.save_dir = run_args.save_dir
+    args.save_file_name = run_args.save_file_name
     
     ckp_path = os.path.join(run_args.save_dir, run_args.checkpoint)
     assert os.path.isfile(ckp_path), 'Checkpoint file does not exist at {}'.format(ckp_path)
     with open(ckp_path, 'rb') as f:
         checkpoint = torch.load(f, map_location=torch.device('cpu'))
 
-    logger = setup_logger(save_path=os.path.join(args.save_dir, "test.log"))
+    logger = setup_logger(save_path=os.path.join(args.save_dir, args.save_file_name))
     logger.info(args)
 
     # setup global seed
@@ -71,7 +76,7 @@ def main():
     if args.space == 'nasbench':
         database = NASBenchDataBase(args.data_path)
         dataset = NASBenchDataset(database, seed=args.seed)
-        valset = SplitSubet(dataset, list(range(args.train_size, args.train_size + args.val_size)))
+        valset = SplitSubet(dataset, list(range(args.train_size, args.train_size + args.val_size)), args.ranker.n_tier)
         
     # build dataloader
     val_dataloader = torch.utils.data.DataLoader(

@@ -85,8 +85,8 @@ def main():
     if args.space == 'nasbench':
         database = NASBenchDataBase(args.data_path)
         dataset = NASBenchDataset(database, seed=args.seed)
-        trainset = SplitSubet(dataset, list(range(args.train_size)))
-        valset = SplitSubet(dataset, list(range(args.train_size, args.train_size + args.val_size)))
+        trainset = SplitSubet(dataset, list(range(args.train_size)), args.ranker.n_tier)
+        valset = SplitSubet(dataset, list(range(args.train_size, args.train_size + args.val_size)), args.ranker.n_tier)
 
     # build dataloader
     train_dataloader = torch.utils.data.DataLoader(
@@ -107,8 +107,7 @@ def main():
 
     # build loss
     criterion = CrossEntropyLossSoft().cuda(device)
-    if args.aux_loss:
-        aux_criterion = RankLoss().cuda(device)
+    aux_criterion = RankLoss().cuda(device)
 
     # build model
     logger.info('Building model with {}'.format(args.ranker))
