@@ -1,6 +1,6 @@
 arch: "NAR"
 
-exp_name: "n201_runtime_exp_seed33333333"
+exp_name: "n201_noisy0_exp_seed33333333"
 seed: 33333333
 
 is_cuda: True
@@ -16,8 +16,8 @@ train_batch_size: 128
 val_batch_size: 128
 
 start_epochs: 0
-ranker_epochs: 60
-sampler_epochs: 110
+ranker_epochs: 55
+sampler_epochs: 105
 validate_freq: 1
 
 strategy: "val_acc"
@@ -42,7 +42,7 @@ ranker:
   scale_prj: True
 
 aux_loss: True
-loss_factor: 9
+loss_factor: 1
 
 optimizer:
   beta1: 0.9
