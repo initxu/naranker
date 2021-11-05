@@ -4,7 +4,7 @@ import random
 import torch.utils.data
 import torch.nn.functional as F
 
-from dataset import NASBench201Dataset, SplitSubet
+from dataset import NASBench201Dataset, SplitSubet201
 from sampler import ArchSampler201
 
 from .train_utils import *
@@ -43,7 +43,7 @@ def evaluate_sampled_batch_201(model, sampler : ArchSampler201, tier_list, batch
     random.shuffle(sampled_arch_datast_idx)  # in_place
     assert len(sampled_arch_datast_idx) == args.sampler.sample_size, 'Not enough sampled dataset'
 
-    sampled_trainset = SplitSubet(dataset, sampled_arch_datast_idx)
+    sampled_trainset = SplitSubet201(dataset, sampled_arch_datast_idx, args.ranker.n_tier)
     sampled_dataloader = torch.utils.data.DataLoader(
         sampled_trainset,
         batch_size=args.sampler.search_size,  # train on sampled dataset, but the sampler batchsize
@@ -56,7 +56,7 @@ def evaluate_sampled_batch_201(model, sampler : ArchSampler201, tier_list, batch
     results_tpk5 = []
     for _, batch in enumerate(sampled_dataloader):
         
-        (arch_feature, val_acc, test_acc, params, flops, edges_type_counts, rank) = batch[args.network_type]
+        (arch_feature, val_acc, test_acc, params, flops, edges_type_counts, rank, label) = batch[args.network_type]
         arch_feature = arch_feature.float().cuda(device)
         params = params.float().cuda(device)
         flops = flops.float().cuda(device)

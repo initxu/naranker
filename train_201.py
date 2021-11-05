@@ -7,7 +7,7 @@ import torch.utils.data
 import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
 
-from dataset import NASBench201DataBase, NASBench201Dataset, SplitSubet
+from dataset import NASBench201DataBase, NASBench201Dataset, SplitSubet201
 from architecture import Bucket
 from ranker import Transformer
 from sampler import ArchSampler201
@@ -85,8 +85,8 @@ def main():
     if args.space == 'nasbench201':
         database = NASBench201DataBase(args.data_path)
         dataset = NASBench201Dataset(database, seed=args.seed)
-        trainset = SplitSubet(dataset, list(range(args.train_size)))
-        valset = SplitSubet(dataset, list(range(args.train_size, args.train_size + args.val_size)))
+        trainset = SplitSubet201(dataset, list(range(args.train_size)), args.ranker.n_tier)
+        valset = SplitSubet201(dataset, list(range(args.train_size, args.train_size + args.val_size)), args.ranker.n_tier)
 
     # build dataloader
     train_dataloader = torch.utils.data.DataLoader(
