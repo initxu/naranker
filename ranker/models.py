@@ -16,7 +16,7 @@ class Encoder(nn.Module):
         super().__init__()
 
         self.position_enc = PositionalEncoding(d_patch_vec, n_position=n_position)
-        # self.dropout = nn.Dropout(p=dropout)                                                # 删掉，可以做ablation exp
+        self.dropout = nn.Dropout(p=dropout)
         self.layer_stack = nn.ModuleList([
             EncoderLayer(d_model, d_inner, n_head, d_k, d_v, dropout=dropout)
             for _ in range(n_layers)])
@@ -28,7 +28,7 @@ class Encoder(nn.Module):
         enc_slf_attn_list = []
 
         # -- Forward
-        # src_seq = self.dropout(src_seq)                                                   # 删掉，后期做ablation exp
+        src_seq = self.dropout(src_seq)
         enc_output = self.position_enc(src_seq)
         enc_output = self.layer_norm(enc_output)
 
@@ -51,7 +51,7 @@ class Decoder(nn.Module):
         super().__init__()
 
         self.position_enc = PositionalEncoding(d_patch_vec, n_position=n_position)
-        # self.dropout = nn.Dropout(p=dropout)                                                # 去掉，做ablation exp
+        self.dropout = nn.Dropout(p=dropout)
         self.layer_stack = nn.ModuleList([
             DecoderLayer(d_model, d_inner, n_head, d_k, d_v, dropout=dropout)
             for _ in range(n_layers)])
@@ -63,7 +63,7 @@ class Decoder(nn.Module):
         dec_slf_attn_list, dec_enc_attn_list = [], []
 
         # -- Forward
-        # trg_seq = self.dropout(trg_seq)                                                   # 去掉，做ablation exp
+        trg_seq = self.dropout(trg_seq)
         dec_output = self.position_enc(trg_seq)
         dec_output = self.layer_norm(dec_output)
 
