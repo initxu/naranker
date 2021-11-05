@@ -29,7 +29,7 @@ def get_args():
                         type=str,
                         help='Path to load data')
     parser.add_argument('--save_dir',
-                        default='./output/n101_noisy0_seed1_20211105153013',
+                        default='./output/fixed_labels/n101_noisy0_baseline/n101_noisy0_seed99999999_20211105102157',
                         type=str,
                         help='Path to save output')
     parser.add_argument('--checkpoint',
@@ -37,7 +37,7 @@ def get_args():
                         type=str,
                         help='checkpoint file')
     parser.add_argument('--save_file_name',
-                        default='noisy05_test.log',
+                        default='noisy1_test.log',
                         type=str,
                         help='save file name')
 
