@@ -1,8 +1,8 @@
 arch: "NAR"
 
-exp_name: "n101_dataset_exp_seed77777777"
+exp_name: "n101_noisy0_seed1"
 
-seed: 77777777
+seed: 1
 
 is_cuda: True
 
@@ -66,7 +66,7 @@ sampler:
   batch_factor: 0.1
   reuse_step: 25 # for 25 batch 128, 12 for batch 64
   max_trails: 100
-  noisy_factor: 0.5
+  noisy_factor: 0
   flops_kl_thred: 2.5
   params_kl_thred: 2.5
   sample_size: 256
