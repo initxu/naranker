@@ -139,3 +139,4 @@ debug.py
 output/
 *.out
 *.pt
+*.eps
