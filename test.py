@@ -29,15 +29,19 @@ def get_args():
                         type=str,
                         help='Path to load data')
     parser.add_argument('--save_dir',
-                        default='./output/fixed_labels/n101_noisy0_baseline/n101_noisy0_seed99999999_20211105102157',
+                        default='./output/fixed_labels/n101_noisy0_baseline/n101_noisy0_seed77777777_20211105102057',
                         type=str,
                         help='Path to save output')
     parser.add_argument('--checkpoint',
                         default='ckp_best.pth.tar',
                         type=str,
                         help='checkpoint file')
+    parser.add_argument('--seed',
+                        default=77777777,
+                        type=int,
+                        help='set seed')                    
     parser.add_argument('--save_file_name',
-                        default='noisy1_test.log',
+                        default='tttt.log',
                         type=str,
                         help='save file name')
 
@@ -53,6 +57,7 @@ def main():
     args.data_path = run_args.data_path
     args.save_dir = run_args.save_dir
     args.save_file_name = run_args.save_file_name
+    args.seed = run_args.seed
     
     ckp_path = os.path.join(run_args.save_dir, run_args.checkpoint)
     assert os.path.isfile(ckp_path), 'Checkpoint file does not exist at {}'.format(ckp_path)
@@ -90,6 +95,8 @@ def main():
     criterion = CrossEntropyLossSoft().cuda(device)
     if args.aux_loss:
         aux_criterion = RankLoss().cuda(device)
+    else:
+        aux_criterion = None
 
     logger.info('Building model with {}'.format(args.ranker))
     ranker = Transformer(
@@ -132,11 +139,18 @@ def main():
     assert Bucket.get_n_tier()==0, 'Bucket counts should be reset to 0'
     tier_list = init_tier_list(args)
     
+    history_best_distri = {}
     tpk1_list = []
     tpk5_list = []
-    history_best_distri = {}
+    tpk3_list = []
+    tpk7_list = []
+    tpk10_list = []
+
     tpk1_meter = AverageMeter()
     tpk5_meter = AverageMeter()
+    tpk3_meter = AverageMeter()
+    tpk7_meter = AverageMeter()
+    tpk10_meter = AverageMeter()
 
     distri_list = checkpoint['distri']
     random.shuffle(distri_list)
@@ -148,11 +162,19 @@ def main():
             if (it-args.ranker_epochs)%distri_reuse_step==0:
                 history_best_distri = distri_list[(it-args.ranker_epochs)//distri_reuse_step]
 
-            best_acc_at1, best_rank_at1, best_acc_at5, best_rank_at5 = evaluate_sampled_batch(ranker, sampler, tier_list, history_best_distri, dataset, it, args, device, None, logger, flag)
+            best_acc_at1, best_rank_at1, best_acc_at5, best_rank_at5, best_acc_at3, best_rank_at3, best_acc_at7, best_rank_at7, best_acc_at10, best_rank_at10 = evaluate_sampled_batch(ranker, sampler, tier_list, history_best_distri, dataset, it, args, device, None, logger, flag)
+            
             tpk1_meter.update(best_acc_at1, n=1)
             tpk1_list.append((it-args.ranker_epochs, best_acc_at1, best_rank_at1))
             tpk5_meter.update(best_acc_at5, n=1)
             tpk5_list.append((it-args.ranker_epochs, best_acc_at5, best_rank_at5))
+
+            tpk3_meter.update(best_acc_at3, n=1)
+            tpk3_list.append((it-args.ranker_epochs, best_acc_at3, best_rank_at3))
+            tpk7_meter.update(best_acc_at7, n=1)
+            tpk7_list.append((it-args.ranker_epochs, best_acc_at7, best_rank_at7))
+            tpk10_meter.update(best_acc_at10, n=1)
+            tpk10_list.append((it-args.ranker_epochs, best_acc_at10, best_rank_at10))
     
     tpk1_best = sorted(tpk1_list, key=lambda item:item[1], reverse=True)[0]
     logger.info('[Result] Top1 Best Arch in Iter {:2d}: Test Acc {:.8f} Rank: {:5d}(top {:.2%}), Avg Test Acc {:.8f}'.format(
@@ -169,6 +191,30 @@ def main():
         tpk5_best[2],
         tpk5_best[2]/len(dataset),
         tpk5_meter.avg))
+
+    tpk3_best = sorted(tpk3_list, key=lambda item:item[1], reverse=True)[0]
+    logger.info('[Result] Top3 Best Arch in Iter {:2d}: Test Acc {:.8f} Rank: {:5d}(top {:.2%}), Avg Test Acc {:.8f}'.format(
+        tpk3_best[0],
+        tpk3_best[1],  
+        tpk3_best[2],
+        tpk3_best[2]/len(dataset),
+        tpk3_meter.avg))
+
+    tpk7_best = sorted(tpk7_list, key=lambda item:item[1], reverse=True)[0]
+    logger.info('[Result] Top7 Best Arch in Iter {:2d}: Test Acc {:.8f} Rank: {:5d}(top {:.2%}), Avg Test Acc {:.8f}'.format(
+        tpk7_best[0],
+        tpk7_best[1],  
+        tpk7_best[2],
+        tpk7_best[2]/len(dataset),
+        tpk7_meter.avg))
+    
+    tpk10_best = sorted(tpk10_list, key=lambda item:item[1], reverse=True)[0]
+    logger.info('[Result] Top10 Best Arch in Iter {:2d}: Test Acc {:.8f} Rank: {:5d}(top {:.2%}), Avg Test Acc {:.8f}'.format(
+        tpk10_best[0],
+        tpk10_best[1],  
+        tpk10_best[2],
+        tpk10_best[2]/len(dataset),
+        tpk10_meter.avg))
     
     logger.info('search using time {:.4f} seconds'.format(time.perf_counter()-start))
 

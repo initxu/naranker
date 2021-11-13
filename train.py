@@ -107,7 +107,10 @@ def main():
 
     # build loss
     criterion = CrossEntropyLossSoft().cuda(device)
-    aux_criterion = RankLoss().cuda(device)
+    if args.aux_loss:
+        aux_criterion = RankLoss().cuda(device)
+    else:
+        aux_criterion = None
 
     # build model
     logger.info('Building model with {}'.format(args.ranker))
@@ -215,7 +218,7 @@ def main():
             if (it-args.ranker_epochs)%distri_reuse_step==0:
                 history_best_distri = distri_list[(it-args.ranker_epochs)//distri_reuse_step]
 
-            best_acc_at1, best_rank_at1, best_acc_at5, best_rank_at5 = evaluate_sampled_batch(ranker, sampler, tier_list, history_best_distri, dataset, it, args, device, tb_writer, logger, flag)
+            best_acc_at1, best_rank_at1, best_acc_at5, best_rank_at5, best_acc_at3, best_rank_at3, best_acc_at7, best_rank_at7, best_acc_at10, best_rank_at10 = evaluate_sampled_batch(ranker, sampler, tier_list, history_best_distri, dataset, it, args, device, tb_writer, logger, flag)
             tpk1_meter.update(best_acc_at1, n=1)
             tpk1_list.append((it-args.ranker_epochs, best_acc_at1, best_rank_at1))
             tpk5_meter.update(best_acc_at5, n=1)
