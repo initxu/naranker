@@ -3,7 +3,7 @@ import time
 import copy
 
 from architecture import Bucket
-from utils.metric import AverageMeter, compute_accuracy
+from utils.metric import AverageMeter, compute_accuracy, compute_kendall_tau
 
 from .train_utils import *
 
@@ -53,12 +53,11 @@ def train_epoch(model, train_dataloader, criterion, aux_criterion, optimizer, lr
         
         output, enc_output, val_acc_pred = model(arch_feature, tier_feature)
         
-        # if epoch ==0 and total_iter == 15: #(epoch ==34 and total_iter == 559): # or (epoch == 9 and total_iter == 159)or (epoch ==19 and total_iter == 319)
-        #     import pdb;pdb.set_trace()
+        # if (epoch ==34 and total_iter == 559): #epoch ==0 and total_iter == 15: #: # or (epoch == 9 and total_iter == 159)or (epoch ==19 and total_iter == 319)
         #     a = {'output':output.clone().detach(),
         #         'enc_output':enc_output.clone().detach(),
-        #         'target':target}
-        #     torch.save(a, "{}_feature.pt".format(epoch))
+        #         'target':label}
+        #     torch.save(a, "{}_feature_true.pt".format(epoch))
         
         loss = criterion(output, label)
 
@@ -110,6 +109,7 @@ def validate(model, val_dataloader, criterion, aux_criterion, device, args, logg
     batch_time = AverageMeter()
     batch_loss = AverageMeter()
     batch_acc = AverageMeter()
+    batch_ktau = AverageMeter()
 
     model.eval()
     assert Bucket.get_n_tier()==0, 'Bucket counts should be reset to 0'
@@ -141,6 +141,12 @@ def validate(model, val_dataloader, criterion, aux_criterion, device, args, logg
         
         loss = criterion(output, label)
 
+        # a = {   'pred_val': val_acc_pred.clone().detach(),
+        #         'rank':     rank.clone().detach(),
+        #         'label': label
+        #     }
+        # torch.save(a, "{}_{}_rank_point.pt".format(epoch, it))
+
         if aux_criterion:
             aux_loss = aux_criterion(val_acc_pred.squeeze(1), val_acc)
             loss += args.loss_factor * aux_loss
@@ -149,9 +155,12 @@ def validate(model, val_dataloader, criterion, aux_criterion, device, args, logg
 
         acc = compute_accuracy(output, label)
         
+        # ktau = compute_kendall_tau(val_acc_pred, val_acc)
+        
         b_sz = arch_feature.size(0)
         batch_loss.update(loss, b_sz)
         batch_acc.update(acc, b_sz)
+        # batch_ktau.update(ktau, n=1)
         batch_time.update(time.time() - batch_start, n=1)
         
         logger.info('[{}][Epoch:{:2d}][Iter:{:2d}/{:2d}] Time: {:.2f} ({:.2f}) Acc: {:.4f} ({:.4f}) Loss: {:.6f} ({:.6f})'.format(

@@ -43,7 +43,10 @@ def evaluate_sampled_batch(model, sampler : ArchSampler, tier_list, batch_static
     model.eval()
 
     results_tpk1 = []
+    results_tpk3 = []
     results_tpk5 = []
+    results_tpk7 = []
+    results_tpk10 =[]
     for _, batch in enumerate(sampled_dataloader):
         
         arch_feature, val_acc, test_acc, params, flops, n_nodes, rank, label = batch
@@ -62,14 +65,19 @@ def evaluate_sampled_batch(model, sampler : ArchSampler, tier_list, batch_static
         classify_tier_counts_by_pred(params, flops, n_nodes, tier_list, prob, args.bins)
 
         # find best pred arch
-        _, index = torch.topk(prob, k=1, dim=1)
+        val, index = torch.topk(prob, k=1, dim=1)
         index = index.squeeze(dim=1)
         
         idx = torch.where(index == 0)   # tier 1 对应的下标
         
         t1_test_acc = test_acc[idx]
         t1_rank = rank[idx]
-        t1_pred_val_acc =  val_acc_pred.squeeze(1)[idx]
+
+        if args.aux_loss:
+            t1_pred_val_acc =  val_acc_pred.squeeze(1)[idx]
+        else:
+            t1_pred_val_acc = val.squeeze(dim=-1)[idx]  # 如果不用auz_loss,则用预测分类的大小去选择topk的结构
+
         
         # evaluate by pred val acc
         _, tpk5_idx = torch.topk(t1_pred_val_acc, k=5)
@@ -78,15 +86,39 @@ def evaluate_sampled_batch(model, sampler : ArchSampler, tier_list, batch_static
         tpk5_best_rank = min(tpk5_rank)
         tpk5_best_test_acc = max(tpk5_test_acc)
 
+        _, tpk3_idx = torch.topk(t1_pred_val_acc, k=3)
+        tpk3_rank = t1_rank[tpk3_idx]
+        tpk3_test_acc = t1_test_acc[tpk3_idx]
+        tpk3_best_rank = min(tpk3_rank)
+        tpk3_best_test_acc = max(tpk3_test_acc)
+
+        _, tpk7_idx = torch.topk(t1_pred_val_acc, k=7)
+        tpk7_rank = t1_rank[tpk7_idx]
+        tpk7_test_acc = t1_test_acc[tpk7_idx]
+        tpk7_best_rank = min(tpk7_rank)
+        tpk7_best_test_acc = max(tpk7_test_acc)
+
+        _, tpk10_idx = torch.topk(t1_pred_val_acc, k=10)
+        tpk10_rank = t1_rank[tpk10_idx]
+        tpk10_test_acc = t1_test_acc[tpk10_idx]
+        tpk10_best_rank = min(tpk10_rank)
+        tpk10_best_test_acc = max(tpk10_test_acc)
+
         _, tpk1_idx = torch.topk(t1_pred_val_acc, k=1)
         tpk1_rank = t1_rank[tpk1_idx]
         tpk1_test_acc = t1_test_acc[tpk1_idx]
 
         results_tpk1.append((tpk1_test_acc.item(), tpk1_rank.item()))
         results_tpk5.append((tpk5_best_test_acc.item(), tpk5_best_rank.item()))
+        results_tpk3.append((tpk3_best_test_acc.item(), tpk3_best_rank.item()))
+        results_tpk7.append((tpk7_best_test_acc.item(), tpk7_best_rank.item()))
+        results_tpk10.append((tpk10_best_test_acc.item(), tpk10_best_rank.item()))
         
     (best_acc_at1, best_rank_at1) = sorted(results_tpk1, key=lambda item:item[0], reverse=True)[0]
     (best_acc_at5, best_rank_at5) = sorted(results_tpk5, key=lambda item:item[0], reverse=True)[0]
+    (best_acc_at3, best_rank_at3) = sorted(results_tpk3, key=lambda item:item[0], reverse=True)[0]
+    (best_acc_at7, best_rank_at7) = sorted(results_tpk7, key=lambda item:item[0], reverse=True)[0]
+    (best_acc_at10, best_rank_at10) = sorted(results_tpk10, key=lambda item:item[0], reverse=True)[0]
 
     best_rank_percentage_at1 = best_rank_at1/len(dataset)
     best_rank_percentage_at5 = best_rank_at5/len(dataset)
@@ -103,4 +135,4 @@ def evaluate_sampled_batch(model, sampler : ArchSampler, tier_list, batch_static
             best_rank_at1,
             best_rank_percentage_at1))
 
-    return best_acc_at1, best_rank_at1, best_acc_at5, best_rank_at5
+    return best_acc_at1, best_rank_at1, best_acc_at5, best_rank_at5, best_acc_at3, best_rank_at3, best_acc_at7, best_rank_at7, best_acc_at10, best_rank_at10
