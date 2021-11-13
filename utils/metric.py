@@ -20,38 +20,24 @@ def _sign(number):
         return -1
 
 
-def compute_kendall_tau(a, b):
+def compute_kendall_tau(pred_score, score):
     '''
     Kendall Tau is a metric to measure the ordinal association between two measured quantities.
     Refer to https://en.wikipedia.org/wiki/Kendall_rank_correlation_coefficient
     '''
-    assert len(a) == len(b), "Sequence a and b should have the same length while computing kendall tau."
-    length = len(a)
+
+    pred_score = pred_score.squeeze(dim=-1)
+    assert len(pred_score) == len(score), "Sequence a and b should have the same length while computing kendall tau."
+    
+    length = len(pred_score)
     count = 0
     total = 0
     for i in range(length - 1):
         for j in range(i + 1, length):
-            count += _sign(a[i] - a[j]) * _sign(b[i] - b[j])
+            count += _sign(pred_score[i] - pred_score[j]) * _sign(score[i] - score[j])
             total += 1
     Ktau = count / total
     return Ktau
-
-
-def t1_kendall_tau(output, score):
-    output_log_prob = F.softmax(output, dim=1)
-    prob_val, prob_idx = torch.topk(output_log_prob, k=1, dim=1)
-    prob_val = prob_val.squeeze(dim=1)
-    prob_idx = prob_idx.squeeze(dim=1)
-
-    t1_idx = torch.where(prob_idx == 0)
-    t1_pred_prob = prob_val[t1_idx]
-    t1_gt_score = score[t1_idx]
-    if t1_gt_score.size(0) == 0:
-        t1_Ktau = None
-    else:
-        t1_Ktau = compute_kendall_tau(t1_pred_prob, t1_gt_score)
-
-    return t1_Ktau
 
 
 class AverageMeter(object):
