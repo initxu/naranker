@@ -1,6 +1,6 @@
 arch: "NAR"
 
-exp_name: "n101_noisy05_exp_seed77777777"
+exp_name: "tier3"
 
 # seed: 77777777
 
@@ -31,7 +31,7 @@ strategy: "val_acc"
 bins: 8
 
 ranker:
-  n_tier: 5
+  n_tier: 7
   n_arch_patch: 19
   d_patch: 7
   d_patch_vec: 256

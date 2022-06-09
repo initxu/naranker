@@ -29,7 +29,7 @@ def get_args():
                         type=str,
                         help='Path to load data')
     parser.add_argument('--save_dir',
-                        default='./output/fixed_labels/n101_noisy0_baseline/n101_noisy0_seed77777777_20211105102057',
+                        default='./output/fixed_labels/tier7/tier7_seed88888888_20220608185051',
                         type=str,
                         help='Path to save output')
     parser.add_argument('--checkpoint',
@@ -37,11 +37,11 @@ def get_args():
                         type=str,
                         help='checkpoint file')
     parser.add_argument('--seed',
-                        default=77777777,
+                        default=88888888,
                         type=int,
                         help='set seed')                    
     parser.add_argument('--save_file_name',
-                        default='tttt.log',
+                        default='topk.log',
                         type=str,
                         help='save file name')
 
