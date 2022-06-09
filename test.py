@@ -29,7 +29,7 @@ def get_args():
                         type=str,
                         help='Path to load data')
     parser.add_argument('--save_dir',
-                        default='./output/fixed_labels/tier7/tier7_seed88888888_20220608185051',
+                        default='./output/fixed_labels/noauxloss/n101_noisy05_auxfalse_exp_seed99999999_20211107230007',
                         type=str,
                         help='Path to save output')
     parser.add_argument('--checkpoint',
@@ -37,7 +37,7 @@ def get_args():
                         type=str,
                         help='checkpoint file')
     parser.add_argument('--seed',
-                        default=88888888,
+                        default=99999999,
                         type=int,
                         help='set seed')                    
     parser.add_argument('--save_file_name',
