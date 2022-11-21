@@ -56,3 +56,9 @@ class AverageMeter(object):
         self.sum += val * n
         self.count += n
         self.avg = self.sum / self.count
+
+def compute_lat_acc(lat_pred, lat_true, threshold=0.05):
+    diff = (lat_pred.squeeze(-1) - lat_true)/lat_true
+    percent = torch.where(torch.abs(diff) <= threshold)
+    percent = len(percent[0])/len(lat_true)
+    return percent

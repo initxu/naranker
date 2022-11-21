@@ -1,4 +1,5 @@
 from .nasbench201_database import NASBench201DataBase
 from .nasbench201_dataset import NASBench201Dataset
+from .nasbench201_dataset_latency import NASBench201DatasetLatency
 
-__all__ = [NASBench201DataBase, NASBench201Dataset]
+__all__ = [NASBench201DataBase, NASBench201Dataset, NASBench201DatasetLatency]

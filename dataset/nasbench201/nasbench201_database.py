@@ -8,6 +8,10 @@ class NASBench201DataBase(object):
         self.archs = {}
 
         self._load_json_file(data_file)
+        all_lat = []
+        for k in self.archs:
+            v1 = [self.archs[k]['cifar10_latency'], self.archs[k]['cifar100_latency'], self.archs[k]['imagenet16_latency']]
+            all_lat += (v1)
 
     def _load_json_file(self, data_file):
         print('Loading nasbench201 dataset from file')
