@@ -13,7 +13,7 @@ NETYPE='cifar10'
 # --network_type 'cifar10' \
 # --latency_factor 2
 
-CUDA_VISIBLE_DEVICES=${DEVICE} ${PYPATH}/python train_201_latency.py --seed 1 --network_type ${NETYPE} --latency_factor ${LF}
+CUDA_VISIBLE_DEVICES=${DEVICE} ${PYPATH}/python train_201_latency_q2l.py --seed 1 --network_type ${NETYPE} --latency_factor ${LF}
 # CUDA_VISIBLE_DEVICES=${DEVICE} ${PYPATH}/python train_201_latency.py --seed 20211117 --network_type ${NETYPE} --latency_factor ${LF} &
 # CUDA_VISIBLE_DEVICES=${DEVICE} ${PYPATH}/python train_201_latency.py --seed 22222222 --network_type ${NETYPE} --latency_factor ${LF} &
 # CUDA_VISIBLE_DEVICES=${DEVICE} ${PYPATH}/python train_201_latency.py --seed 33333333 --network_type ${NETYPE} --latency_factor ${LF} &

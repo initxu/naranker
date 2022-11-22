@@ -8,6 +8,8 @@ Reference: https://github.com/jadore801120/attention-is-all-you-need-pytorch.git
 """
 
 from .models import Transformer
+from .models_q2l import TransformerQ2L
 from .models_latency import  TransformerLatency
+from .models_latency_q2l import  TransformerLatencyQ2L
 
-__all__ = [Transformer, TransformerLatency]
+__all__ = [Transformer, TransformerLatency,TransformerLatencyQ2L]
